@@ -3,8 +3,8 @@ import cors from 'cors';
 import 'dotenv/config';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-// import userRouter from './routes/userRoutes.js';
-// import vendorRouter from './routes/vendorRoutes.js';
+import vendorAuthRouter from './backend/routes/vendorAuthRoutes.js';
+// import userRouter from './backend/routes/userRoutes.js';
 
 
 
@@ -46,7 +46,7 @@ app.get('/', (req, res) => {
 
 // Routes
 // app.use('/api/users', userRouter);
-// app.use('/api/vendors', vendorRouter);
+app.use('/api/vendors/auth', vendorAuthRouter);
 
 
 // Error handling middleware

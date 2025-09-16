@@ -1,0 +1,449 @@
+import bcrypt from 'bcrypt';
+import Vendor from '../models/vendorModel.js';
+import { VendorVerificationCodes } from '../utils/verificationCodes.js';
+import { sendVerificationEmail } from '../utils/emailSender.js';
+import jwt from "jsonwebtoken";
+import validator from 'validator';
+
+
+// Helper function to sign JWT tokens
+const signToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRES_IN
+    });
+};
+
+
+// User Registration
+export const registerVendor = async (req, res) => {
+    try {
+        const { businessName, email, password, confirmPassword, phone } = req.body;
+
+        // Validations
+        if (!businessName || typeof firstName !== 'string') {
+            return res.status(400).json({
+                status: "fail",
+                message: "Business name must must exist and must be a string"
+            });
+        }
+
+        if (!phone || !/^\d{11}$/.test(phone)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Phone number must be exactly 11 digits"
+            });
+        }
+
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Invalid email format"
+            });
+        }
+
+        if (!validator.isStrongPassword(password, {
+            minLength: 8,
+            minUppercase: 1,
+            minSymbols: 1,
+            minNumbers: 1
+        })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Password must be at least 8 characters and include an uppercase letter, number, and symbol"
+            });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Passwords don't match"
+            });
+        }
+
+        if (await Vendor.findOne({ email })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Email already in use"
+            });
+        }
+
+        await Vendor.create({
+            businessName,
+            email,
+            phone,
+            password: await bcrypt.hash(password, 12),
+            isVerified: false
+        });
+
+        const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
+        await sendVerificationEmail(email, verificationCode);
+
+        res.status(200).json({
+            status: "success",
+            message: "Verification code sent",
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: "Registration failed",
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+// Email Verification
+export const verifyVendor = async (req, res) => {
+    try {
+        const { verificationCode, email } = req.body;
+
+        if (!VendorVerificationCodes.verifyVerificationCode(email, verificationCode)) {
+            return res.status(400).json({ status: "fail", message: "Invalid code" });
+        }
+
+        const vendor = await Vendor.findOneAndUpdate(
+            { email },
+            { isVerified: true },
+            { new: true }
+        );
+
+        if (!vendor) return res.status(404).json({ status: "fail", message: "Vendor not found" });
+
+        const token = signToken(vendor._id);
+        vendor.password = undefined;
+
+        VendorVerificationCodes.clearCode(email, 'verification');
+
+        res.status(200).json({
+            status: "success",
+            token,
+            data: { vendor }
+        });
+    } catch (err) {
+        console.error("Verification error:", err);
+        if (err.name === 'MongoError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Database error during verification",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Account verification failed",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+
+// Resend Verification Code
+export const resendVerificationCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        // // Check if vendor exists
+        const vendor = await Vendor.findOne({ email });
+        if (!vendor) {
+            return res.status(404).json({
+                status: "fail",
+                message: "Vendor not found"
+            });
+        }
+
+        // Check if vendor is already verified
+        if (vendor.isVerified) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Vendor is already verified"
+            });
+        }
+
+        // Check resend limitations (implement this in your VerificationCodes utility)
+        const resendStatus = VendorVerificationCodes.canResendCode(email, CodeTypes.VERIFICATION);
+
+        if (!resendStatus.canResend) {
+            return res.status(429).json({
+                status: "fail",
+                message: resendStatus.message || "Please wait before requesting a new code"
+            });
+        }
+
+        // Generate and send new code
+        const newCode = VerificationCodes.resendVerificationCode(email);
+        await sendVerificationEmail(email, newCode);
+
+        res.status(200).json({
+            status: "success",
+            message: "New verification code sent",
+        });
+
+
+    } catch (err) {
+
+        if (err.name === 'EmailError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Failed to send verification email",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Failed to resend verification code",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+
+    }
+};
+
+
+
+// Login
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Email and password required"
+            });
+        }
+
+        const vendor = await Vendor.findOne({ email }).select('+password');
+        if (!vendor || !(await bcrypt.compare(password, vendor.password))) {
+            return res.status(401).json({
+                status: "fail",
+                message: "Invalid credentials"
+            });
+        }
+
+        if (!vendor.isVerified) {
+            return res.status(401).json({
+                status: "fail",
+                message: "Account not verified"
+            });
+        }
+
+
+        const token = signToken(vendor._id);
+        vendor.password = undefined;
+
+        const response = {
+            status: "success",
+            token,
+            data: { vendor }
+        };
+
+        res.status(200).json(response);
+
+    } catch (err) {
+        console.error('Login error:', err);
+        if (err.name === 'TokenError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Failed to generate authentication token",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Login failed due to server error",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+// Password Reset - Stage 1: Request Reset
+export const requestPasswordReset = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({ status: "fail", message: "Invalid email" });
+        }
+
+        const vendor = await Vendor.findOne({ email });
+        if (!vendor) {
+            return res.status(404).json({ status: "fail", message: "Vendor not found" });
+        }
+
+        const code = VendorVerificationCodes.generateResetCode(email);
+        await sendPasswordResetEmail(email, code);
+
+        res.status(200).json({
+            status: "success",
+            message: "Reset code sent"
+        });
+    } catch (err) {
+        console.error("Reset request error:", err);
+        if (err.name === 'EmailError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Failed to send password reset email",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Password reset request failed",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+// Password Reset - Stage 2: Verify Code
+export const verifyResetCode = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+        const verification = VendorVerificationCodes.verifyResetCode(email, code);
+
+        if (!verification.valid) {
+            return res.status(400).json({
+                status: "fail",
+                message: verification.message
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            message: "Code verified",
+        });
+    } catch (err) {
+        console.error("Code verify error:", err);
+        res.status(500).json({
+            status: "error",
+            message: "Reset code verification failed",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+// Password Reset - Stage 3: Reset Password
+export const resetPassword = async (req, res) => {
+    try {
+        const { email, newPassword, confirmPassword } = req.body;
+
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Passwords don't match"
+            });
+        }
+
+        // Validate password strength
+        if (!validator.isStrongPassword(newPassword, {
+            minLength: 8,
+            minUppercase: 1,
+            minSymbols: 1,
+            minNumbers: 1
+        })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Password must be at least 8 characters and include an uppercase letter, number, and symbol"
+            });
+        }
+
+        // Update the vendor and get the updated document
+        const vendor = await Vendor.findOneAndUpdate(
+            { email },
+            { password: await bcrypt.hash(newPassword, 12) },
+            { new: true } // This ensures we get the updated document
+        );
+
+        if (!vendor) {
+            return res.status(404).json({
+                status: "fail",
+                message: "Vendor not found"
+            });
+        }
+
+        VendorVerificationCodes.clearCode(email, 'password_reset');
+
+        const token = signToken(vendor._id);
+
+        res.status(200).json({
+            status: "success",
+            message: "Password updated successfully",
+            token,
+            data: {
+                id: vendor._id,
+                email: vendor.email
+            }
+        });
+    } catch (err) {
+        console.error("Password reset error:", err);
+        if (err.name === 'BcryptError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Password encryption failed",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Password reset failed",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+// Resend Reset Code
+export const resendResetCode = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        const resendStatus = VendorVerificationCodes.canResendCode(email, CodeTypes.PASSWORD_RESET);
+
+        if (!resendStatus.canResend) {
+            return res.status(429).json({
+                status: "fail",
+                message: resendStatus.message
+            });
+        }
+        const newCode = VerificationCodes.resendResetCode(email);
+
+        await sendPasswordResetEmail(email, newCode);
+
+        res.status(200).json({
+            status: "success",
+            message: "New code sent"
+        });
+    } catch (err) {
+        console.error("Resend error:", err);
+        if (err.name === 'EmailError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Failed to send password reset email",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Failed to resend password reset code",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
