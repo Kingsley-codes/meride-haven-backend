@@ -18,15 +18,15 @@ const userSchema = new mongoose.Schema(
         message: "Invalid email format",
       },
     },
-    phone: {
-      type: String,
-      required: true,
-      trim: true,
-      validate: {
-        validator: validator.isMobilePhone,
-        message: "Invalid phone number format",
-      },
-    },
+    // phone: {
+    //   type: String,
+    //   required: true,
+    //   trim: true,
+    //   validate: {
+    //     validator: validator.isMobilePhone,
+    //     message: "Invalid phone number format",
+    //   },
+    // },
     googleID: {
       type: String,
       sparse: true,
