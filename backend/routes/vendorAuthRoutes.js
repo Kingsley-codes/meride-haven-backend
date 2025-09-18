@@ -21,7 +21,7 @@ vendorAuthRouter.post("/verify", verifyVendor); // Step 3: Verify vendor with co
 vendorAuthRouter.post("/resend-verification", resendVerificationCode); // Resend verification code
 
 
-// Login route
+// Login route 
 vendorAuthRouter.post("/login", login);
 
 

@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import Vendor from '../models/vendorModel.js';
-import { VendorVerificationCodes } from '../utils/verificationCodes.js';
-import { sendVerificationEmail } from '../utils/emailSender.js';
+import { CodeTypes, VendorVerificationCodes } from '../utils/verificationCodes.js';
+import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
 import jwt from "jsonwebtoken";
 import validator from 'validator';
 
@@ -20,7 +20,7 @@ export const registerVendor = async (req, res) => {
         const { businessName, email, password, confirmPassword, phone } = req.body;
 
         // Validations
-        if (!businessName || typeof firstName !== 'string') {
+        if (!businessName || typeof businessName !== 'string') {
             return res.status(400).json({
                 status: "fail",
                 message: "Business name must must exist and must be a string"
@@ -76,7 +76,7 @@ export const registerVendor = async (req, res) => {
         });
 
         const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
-        await sendVerificationEmail(email, verificationCode);
+        await sendVendorVerificationEmail(email, verificationCode, false);
 
         res.status(200).json({
             status: "success",
@@ -175,8 +175,8 @@ export const resendVerificationCode = async (req, res) => {
         }
 
         // Generate and send new code
-        const newCode = VerificationCodes.resendVerificationCode(email);
-        await sendVerificationEmail(email, newCode);
+        const newCode = VendorVerificationCodes.resendVerificationCode(email);
+        await sendVendorVerificationEmail(email, newCode, true);
 
         res.status(200).json({
             status: "success",
@@ -280,7 +280,7 @@ export const requestPasswordReset = async (req, res) => {
         }
 
         const code = VendorVerificationCodes.generateResetCode(email);
-        await sendPasswordResetEmail(email, code);
+        await sendVendorPasswordResetEmail(email, code);
 
         res.status(200).json({
             status: "success",

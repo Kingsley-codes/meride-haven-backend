@@ -10,6 +10,7 @@ const vendorSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
+        unique: true,
         trim: true,
         validate: {
             validator: validator.isEmail,
@@ -27,12 +28,14 @@ const vendorSchema = new mongoose.Schema({
     },
     googleID: {
         type: String,
-        required: true,
-        unique: true
+        sparse: true
     },
     password: {
         type: String,
-        required: true,
+        // Make password required only for non-Google signups
+        required: function () {
+            return !this.googleID; // Required if googleID is not present
+        },
         minlength: 8
     },
     isVerified: {
@@ -54,6 +57,7 @@ const vendorSchema = new mongoose.Schema({
 },
     { timestamps: true }
 );
+
 
 const Vendor = mongoose.model("Vendor", vendorSchema);
 

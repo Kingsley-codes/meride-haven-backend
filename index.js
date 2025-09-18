@@ -45,7 +45,7 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-// app.use('/api/users', userRouter);
+// app.use('/api/users/auth', userRouter);
 app.use('/api/vendors/auth', vendorAuthRouter);
 
 

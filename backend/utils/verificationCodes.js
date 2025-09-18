@@ -205,6 +205,48 @@ export const VendorVerificationCodes = {
         return record.code;
     },
 
+    generateResetCode: (email) => {
+        return setCodeRecord(email, CodeTypes.PASSWORD_RESET);
+    },
+
+    verifyResetCode: (email, code) => {
+        const record = getCodeRecord(email, CodeTypes.PASSWORD_RESET);
+        if (!record) return { valid: false, message: "No reset code found" };
+
+        record.attempts++;
+        if (record.attempts > record.attemptLimit) {
+            codeStorage.delete(`${email}:${CodeTypes.PASSWORD_RESET}`);
+            return { valid: false, message: "Too many attempts" };
+        }
+
+        if (record.code !== code) {
+            return { valid: false, message: "Invalid code" };
+        }
+
+        if (Date.now() > record.expiresAt) {
+            codeStorage.delete(`${email}:${CodeTypes.PASSWORD_RESET}`);
+            return { valid: false, message: "Code expired" };
+        }
+
+        return { valid: true };
+    },
+
+    resendResetCode: (email) => {
+        let record = getCodeRecord(email, CodeTypes.PASSWORD_RESET);
+        if (!record) {
+            return setCodeRecord(email, CodeTypes.PASSWORD_RESET);
+        }
+
+        record.resendCount++;
+        record.lastSent = Date.now();
+        record.code = generateCode();
+        record.expiresAt = Date.now() + (2 * 60 * 1000);
+
+        codeStorage.set(`${email}:${CodeTypes.PASSWORD_RESET}`, record);
+        return record.code;
+    },
+
+
     clearCode: (email, type) => {
         codeStorage.delete(`${email}:${type}`);
     }
