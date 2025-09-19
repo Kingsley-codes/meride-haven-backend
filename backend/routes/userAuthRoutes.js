@@ -3,10 +3,10 @@ import {
   registerUser,
   verifyUser,
   login,
-//   requestPasswordReset,
-//   verifyResetCode,
-//   resetPassword,
-//   resendResetCode,
+  requestPasswordReset,
+  verifyResetCode,
+  resetPassword,
+  resendResetCode,
   resendVerificationCode,
 } from "../controllers/userAuthController.js";
 
@@ -23,12 +23,12 @@ userAuthRouter.post("/resend-verification", resendVerificationCode); // Resend v
 userAuthRouter.post("/login", login);
 
 // Password reset routes
-// userAuthRouter.post('/forgot-password', requestPasswordReset); // Stage 1
+userAuthRouter.post('/forgot-password', requestPasswordReset); // Stage 1
 
-// userAuthRouter.post('/verify-reset-code', verifyResetCode);   // Stage 2
+userAuthRouter.post('/verify-reset-code', verifyResetCode);   // Stage 2
 
-// userAuthRouter.post('/reset-password', resetPassword);        // Stage 3
+userAuthRouter.post('/reset-password', resetPassword);        // Stage 3
 
-// userAuthRouter.post('/resend-reset-code', resendResetCode);   // Resend code
+userAuthRouter.post('/resend-reset-code', resendResetCode);   // Resend code
 
 export default userAuthRouter;
