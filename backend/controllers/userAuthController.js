@@ -99,4 +99,48 @@ export const registerUser = async (req, res) => {
       stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
     });
   }
+// User Email Verification
+export const verifyUser = async (req, res) => {
+    try {
+        const { verificationCode, email } = req.body;
+
+        if (!UserVerificationCodes.verifyVerificationCode(email, verificationCode)) {
+            return res.status(400).json({ status: "fail", message: "Invalid code" });
+        }
+        
+        const user = await User.findOneAndUpdate(
+            { email },
+            { isVerified: true },
+            { new: true }
+        );
+
+        if (!user) return res.status(404).json({ status: "fail", message: "User not found" });
+
+        const token = signToken(user._id);
+        user.password = undefined;
+
+        UserVerificationCodes.clearCode(email, 'verification');
+
+        res.status(200).json({
+            status: "success",
+            token,
+            data: { user }
+        });
+    } catch (err) {
+        console.error("Verification error:", err);
+        if (err.name === 'MongoError') {
+            return res.status(500).json({
+                status: "error",
+                message: "Database error during verification",
+                details: err.message
+            });
+        }
+
+        res.status(500).json({
+            status: "error",
+            message: "Account verification failed",
+            details: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
 };
