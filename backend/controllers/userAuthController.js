@@ -216,7 +216,6 @@ export const resendVerificationCode = async (req, res) => {
 };
 
 
-
 // User Login
 export const login = async (req, res) => {
     try {
