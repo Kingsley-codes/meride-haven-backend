@@ -22,6 +22,8 @@ const signToken = (id) => {
 export const registerUser = async (req, res) => {
   try {
     const { email, password, confirmPassword, fullName, phone } = req.body;
+    console.log("Incoming body:", req.body);
+
 
     // Validate user input
     if (!email || !password || !confirmPassword || !fullName) {
@@ -87,6 +89,7 @@ export const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       username,
+      phone,
       isVerified: false,
     });
 

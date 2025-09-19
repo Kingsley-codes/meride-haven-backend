@@ -3,10 +3,10 @@ import {
   registerUser,
   verifyUser,
   login,
-  // requestPasswordReset,
-  // verifyResetCode,
-  // resetPassword,
-  // resendResetCode,
+//   requestPasswordReset,
+//   verifyResetCode,
+//   resetPassword,
+//   resendResetCode,
   resendVerificationCode,
 } from "../controllers/userAuthController.js";
 

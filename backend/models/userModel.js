@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
       validate: {
-        validator: validator.isMobilePhone,
+        validator: (value) => validator.isMobilePhone(value, "any"),
         message: "Invalid phone number format",
       },
     },
