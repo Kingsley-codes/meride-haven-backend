@@ -49,6 +49,11 @@ app.get('/', (req, res) => {
 app.use('/api/vendors/auth', vendorAuthRouter);
 app.use('/api/users/auth', userRouter);
 
+app.post("/test", (req, res) => {
+  console.log("TEST route hit!", req.body);
+  res.json({ received: req.body });
+});
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

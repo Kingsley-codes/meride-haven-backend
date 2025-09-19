@@ -21,12 +21,10 @@ const signToken = (id) => {
 // User Registration
 export const registerUser = async (req, res) => {
   try {
-    const { email, password, confirmPassword, fullName, phone } = req.body;
-    console.log("Incoming body:", req.body);
-
-
+    const { fullName, email, password, confirmPassword, phone } = req.body;
+    
     // Validate user input
-    if (!email || !password || !confirmPassword || !fullName) {
+    if (!email || !password || !confirmPassword || !fullName || !phone) {
       return res.status(400).json({
         status: "fail",
         message: "All fields are required",
@@ -88,7 +86,7 @@ export const registerUser = async (req, res) => {
     await User.create({
       email,
       password: hashedPassword,
-      username,
+      fullName,
       phone,
       isVerified: false,
     });
