@@ -38,8 +38,8 @@ vendorAuthRouter.post("/resend-reset-code", resendResetCode);   // Resend code
 
 
 // Google OAuth
-userAuthRouter.get('/google', handleGoogleLogin);
+vendorAuthRouter.get('/google', handleGoogleLogin);
 
-userAuthRouter.get('/google/callback', googleAuthCallback);
+vendorAuthRouter.get('/google/callback', googleAuthCallback);
 
 export default vendorAuthRouter;
