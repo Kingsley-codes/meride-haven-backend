@@ -19,7 +19,7 @@ const vendorSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: true,
+        sparse: true,
         unique: true,
         trim: true,
         validate: {

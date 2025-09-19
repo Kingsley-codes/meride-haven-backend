@@ -8,6 +8,8 @@ import {
     resetPassword,
     resendResetCode,
     resendVerificationCode,
+    handleGoogleLogin,
+    googleAuthCallback,
 } from "../controllers/userAuthController.js";
 
 const userAuthRouter = express.Router();
@@ -30,5 +32,11 @@ userAuthRouter.post('/verify-reset-code', verifyResetCode);   // Stage 2
 userAuthRouter.post('/reset-password', resetPassword);        // Stage 3
 
 userAuthRouter.post('/resend-reset-code', resendResetCode);   // Resend code
+
+
+// Google OAuth
+userAuthRouter.get('/google', handleGoogleLogin);
+
+userAuthRouter.get('/google/callback', googleAuthCallback);
 
 export default userAuthRouter;

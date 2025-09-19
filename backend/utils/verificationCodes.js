@@ -14,7 +14,7 @@ const getCodeRecord = (email, type) => {
 
 const setCodeRecord = (email, type, options = {}) => {
     const defaults = {
-        expiresIn: 2 * 60 * 1000, // 2 minutes for all codes
+        expiresIn: 5 * 60 * 60 * 1000, // 5 hours for all codes
         maxAttempts: 5,
         resendLimit: 5,
         resendCooldown: 2 * 60 * 1000 // 2 minutes cooldown
@@ -118,7 +118,7 @@ export const UserVerificationCodes = {
         record.resendCount++;
         record.lastSent = Date.now();
         record.code = generateCode();
-        record.expiresAt = Date.now() + (2 * 60 * 1000);
+        record.expiresAt = Date.now() + (5 * 60 * 60 * 1000);
 
         codeStorage.set(`${email}:${CodeTypes.PASSWORD_RESET}`, record);
         return record.code;
@@ -133,7 +133,7 @@ export const UserVerificationCodes = {
         record.resendCount++;
         record.lastSent = Date.now();
         record.code = generateCode();
-        record.expiresAt = Date.now() + (2 * 60 * 1000);
+        record.expiresAt = Date.now() + (5 * 60 * 60 * 1000);
 
         codeStorage.set(`${email}:${CodeTypes.VERIFICATION}`, record);
         return record.code;
@@ -199,7 +199,7 @@ export const VendorVerificationCodes = {
         record.resendCount++;
         record.lastSent = Date.now();
         record.code = generateCode();
-        record.expiresAt = Date.now() + (2 * 60 * 1000);
+        record.expiresAt = Date.now() + (5 * 60 * 60 * 1000);
 
         codeStorage.set(`${email}:${CodeTypes.VERIFICATION}`, record);
         return record.code;
@@ -240,7 +240,7 @@ export const VendorVerificationCodes = {
         record.resendCount++;
         record.lastSent = Date.now();
         record.code = generateCode();
-        record.expiresAt = Date.now() + (2 * 60 * 1000);
+        record.expiresAt = Date.now() + (5 * 60 * 60 * 1000);
 
         codeStorage.set(`${email}:${CodeTypes.PASSWORD_RESET}`, record);
         return record.code;

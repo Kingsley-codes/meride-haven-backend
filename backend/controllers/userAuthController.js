@@ -7,6 +7,7 @@ import {
 } from "../utils/emailSender.js";
 import jwt from "jsonwebtoken";
 import validator from "validator";
+import passport from "passport";
 
 // Helper function to sign JWT tokens for User
 const signToken = (id) => {
@@ -488,3 +489,39 @@ export const resendResetCode = async (req, res) => {
     });
   }
 };
+
+
+export const handleGoogleLogin = (req, res, next) => {
+  passport.authenticate('google-user', {
+    scope: ['profile', 'email'],
+    session: false,
+  })(req, res, next);
+};
+
+
+export const googleAuthCallback = (req, res) => {
+  passport.authenticate(
+    'google-user',
+    {
+      session: false, failureRedirect: `${process.env.FRONTEND_URL}/login`
+    },
+    (err, user) => {
+      if (err || !user) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login`);
+      }
+
+      const token = signToken(user._id);
+
+      if (process.env.FRONTEND_URL) {
+        const redirectUrl = `${process.env.FRONTEND_URL}/?token=${token}`;
+        return res.redirect(redirectUrl);
+      }
+
+      return res.json({ token });
+    }
+  )(req, res);
+};
+
+
+
+

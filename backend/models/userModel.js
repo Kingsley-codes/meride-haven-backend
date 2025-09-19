@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
+      sparse: true,
       trim: true,
       validate: {
         validator: (value) => validator.isMobilePhone(value, "any"),
