@@ -4,7 +4,7 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import vendorAuthRouter from './backend/routes/vendorAuthRoutes.js';
-// import userRouter from './backend/routes/userRoutes.js';
+import userRouter from './backend/routes/userAuthRoutes.js';
 
 
 
@@ -47,6 +47,7 @@ app.get('/', (req, res) => {
 // Routes
 // app.use('/api/users/auth', userRouter);
 app.use('/api/vendors/auth', vendorAuthRouter);
+app.use('/api/users/auth', userRouter);
 
 
 // Error handling middleware

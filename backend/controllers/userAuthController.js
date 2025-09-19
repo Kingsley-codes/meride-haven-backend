@@ -1,8 +1,11 @@
 import bcrypt from "bcrypt";
 import User from "../models/userModel.js";
-import { CodeTypes, UserVerificationCodes } from "../utils/verificationCodes";
 import {
-  sendUserPasswordResetEmail,
+  CodeTypes,
+  UserVerificationCodes,
+} from "../utils/verificationCodes.js";
+import {
+  //   sendUserPasswordResetEmail,
   sendUserVerificationEmail,
 } from "../utils/emailSender.js";
 import jwt from "jsonwebtoken";
@@ -18,10 +21,10 @@ const signToken = (id) => {
 // User Registration
 export const registerUser = async (req, res) => {
   try {
-    const { email, password, confirmPassword, username } = req.body;
+    const { email, password, confirmPassword, fullName, phone } = req.body;
 
     // Validate user input
-    if (!email || !password || !confirmPassword || !username) {
+    if (!email || !password || !confirmPassword || !fullName) {
       return res.status(400).json({
         status: "fail",
         message: "All fields are required",
@@ -49,6 +52,13 @@ export const registerUser = async (req, res) => {
         status: "fail",
         message:
           "Password must be at least 8 characters and include an uppercase letter, number, and symbol",
+      });
+    }
+
+    if (!phone || !/^\d{11}$/.test(phone)) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Phone number must be exactly 11 digits",
       });
     }
 
@@ -152,125 +162,120 @@ export const verifyUser = async (req, res) => {
   }
 };
 
-
 // USer Resend Verification Code
 export const resendVerificationCode = async (req, res) => {
-    try {
-        const { email } = req.body;
+  try {
+    const { email } = req.body;
 
-        // // Check if user exists
-        const user = await User.findOne({ email });
-        if (!user) {
-            return res.status(404).json({
-                status: "fail",
-                message: "User not found"
-            });
-        }
-
-        // Check if user is already verified
-        if (user.isVerified) {
-            return res.status(400).json({
-                status: "fail",
-                message: "User is already verified"
-            });
-        }
-
-        // Check resend limitations (implement this in your VerificationCodes utility)
-        const resendStatus = UserVerificationCodes.canResendCode(email, CodeTypes.VERIFICATION);
-
-        if (!resendStatus.canResend) {
-            return res.status(429).json({
-                status: "fail",
-                message: resendStatus.message || "Please wait before requesting a new code"
-            });
-        }
-
-        // Generate and send new code
-        const newCode = UserVerificationCodes.resendVerificationCode(email);
-        await sendUserVerificationEmail(email, newCode, true);
-
-        res.status(200).json({
-            status: "success",
-            message: "New verification code sent",
-        });
-
-
-    } catch (err) {
-
-        if (err.name === 'EmailError') {
-            return res.status(500).json({
-                status: "error",
-                message: "Failed to send verification email",
-                details: err.message
-            });
-        }
-
-        res.status(500).json({
-            status: "error",
-            message: "Failed to resend verification code",
-            details: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-        });
-
+    // // Check if user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({
+        status: "fail",
+        message: "User not found",
+      });
     }
-};
 
+    // Check if user is already verified
+    if (user.isVerified) {
+      return res.status(400).json({
+        status: "fail",
+        message: "User is already verified",
+      });
+    }
+
+    // Check resend limitations (implement this in your VerificationCodes utility)
+    const resendStatus = UserVerificationCodes.canResendCode(
+      email,
+      CodeTypes.VERIFICATION
+    );
+
+    if (!resendStatus.canResend) {
+      return res.status(429).json({
+        status: "fail",
+        message:
+          resendStatus.message || "Please wait before requesting a new code",
+      });
+    }
+
+    // Generate and send new code
+    const newCode = UserVerificationCodes.resendVerificationCode(email);
+    await sendUserVerificationEmail(email, newCode, true);
+
+    res.status(200).json({
+      status: "success",
+      message: "New verification code sent",
+    });
+  } catch (err) {
+    if (err.name === "EmailError") {
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to send verification email",
+        details: err.message,
+      });
+    }
+
+    res.status(500).json({
+      status: "error",
+      message: "Failed to resend verification code",
+      details: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+};
 
 // User Login
 export const login = async (req, res) => {
-    try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({
-                status: "fail",
-                message: "Email and password required"
-            });
-        }
-
-        const user = await User.findOne({ email }).select('+password');
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({
-                status: "fail",
-                message: "Invalid credentials"
-            });
-        }
-
-        if (!user.isVerified) {
-            return res.status(401).json({
-                status: "fail",
-                message: "Account not verified"
-            });
-        }
-
-
-        const token = signToken(user._id);
-        user.password = undefined;
-
-        const response = {
-            status: "success",
-            token,
-            data: { user }
-        };
-
-        res.status(200).json(response);
-
-    } catch (err) {
-        console.error('Login error:', err);
-        if (err.name === 'TokenError') {
-            return res.status(500).json({
-                status: "error",
-                message: "Failed to generate authentication token",
-                details: err.message
-            });
-        }
-
-        res.status(500).json({
-            status: "error",
-            message: "Login failed due to server error",
-            details: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-        });
+    if (!email || !password) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Email and password required",
+      });
     }
-};
 
+    const user = await User.findOne({ email }).select("+password");
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Invalid credentials",
+      });
+    }
+
+    if (!user.isVerified) {
+      return res.status(401).json({
+        status: "fail",
+        message: "Account not verified",
+      });
+    }
+
+    const token = signToken(user._id);
+    user.password = undefined;
+
+    const response = {
+      status: "success",
+      token,
+      data: { user },
+    };
+
+    res.status(200).json(response);
+  } catch (err) {
+    console.error("Login error:", err);
+    if (err.name === "TokenError") {
+      return res.status(500).json({
+        status: "error",
+        message: "Failed to generate authentication token",
+        details: err.message,
+      });
+    }
+
+    res.status(500).json({
+      status: "error",
+      message: "Login failed due to server error",
+      details: err.message,
+      stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    });
+  }
+};
