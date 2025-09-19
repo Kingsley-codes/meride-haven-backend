@@ -43,6 +43,10 @@ const vendorSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isApproved: {
+        type: Boolean,
+        default: false
+    },
     cacCertificate: {
         publicId: String,
         url: String
