@@ -8,6 +8,8 @@ import {
     resetPassword,
     resendResetCode,
     resendVerificationCode,
+    handleGoogleLogin,
+    googleAuthCallback,
 } from "../controllers/vendorAuthController.js";
 
 const vendorAuthRouter = express.Router();
@@ -35,5 +37,9 @@ vendorAuthRouter.post("/reset-password", resetPassword);        // Stage 3
 vendorAuthRouter.post("/resend-reset-code", resendResetCode);   // Resend code
 
 
+// Google OAuth
+userAuthRouter.get('/google', handleGoogleLogin);
+
+userAuthRouter.get('/google/callback', googleAuthCallback);
 
 export default vendorAuthRouter;

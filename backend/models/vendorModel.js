@@ -4,7 +4,11 @@ import validator from "validator";
 const vendorSchema = new mongoose.Schema({
     businessName: {
         type: String,
-        required: true,
+        sparse: true,
+        trim: true
+    },
+    vendorName: {
+        type: String,
         trim: true
     },
     email: {

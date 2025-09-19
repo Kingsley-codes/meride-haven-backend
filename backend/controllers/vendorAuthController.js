@@ -447,3 +447,34 @@ export const resendResetCode = async (req, res) => {
     }
 };
 
+
+export const handleGoogleLogin = (req, res, next) => {
+    passport.authenticate('google-vendor', {
+        scope: ['profile', 'email'],
+        session: false,
+    })(req, res, next);
+};
+
+
+export const googleAuthCallback = (req, res) => {
+    passport.authenticate(
+        'google-vendor',
+        {
+            session: false, failureRedirect: `${process.env.FRONTEND_URL}/login`
+        },
+        (err, vendor) => {
+            if (err || !vendor) {
+                return res.redirect(`${process.env.FRONTEND_URL}/login`);
+            }
+
+            const token = signToken(vendor._id);
+
+            if (process.env.FRONTEND_URL) {
+                const redirectUrl = `${process.env.FRONTEND_URL}/?token=${token}`;
+                return res.redirect(redirectUrl);
+            }
+
+            return res.json({ token });
+        }
+    )(req, res);
+};

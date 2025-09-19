@@ -72,8 +72,7 @@ passport.use('google-vendor', new GoogleStrategy({
         const newVendor = new Vendor({
             googleId: profile.id,
             email: profile.emails[0].value,
-            businessName: profile.displayName,
-            fullName: profile.displayName,
+            vendorName: profile.displayName,
             isVerified: true
         });
 
