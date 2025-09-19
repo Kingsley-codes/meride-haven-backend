@@ -75,7 +75,7 @@ export const registerUser = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         status: "fail",
-        message: "User already exists",
+        message: "Email with this user already exists!!!",
       });
     }
 
@@ -293,7 +293,7 @@ export const requestPasswordReset = async (req, res) => {
 
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ status: "fail", message: "User not found" });
+            return res.status(404).json({ status: "fail", message: "User Email not found" });
         }
 
         const code = UserVerificationCodes.generateResetCode(email);
@@ -331,7 +331,7 @@ export const verifyResetCode = async (req, res) => {
 
         if (!verification.valid) {
             return res.status(400).json({
-                status: "fail",
+                status: "fail:::",
                 message: verification.message
             });
         }
