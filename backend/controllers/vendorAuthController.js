@@ -420,9 +420,9 @@ export const resendResetCode = async (req, res) => {
                 message: resendStatus.message
             });
         }
-        const newCode = VerificationCodes.resendResetCode(email);
+        const newCode = VendorVerificationCodes.resendResetCode(email);
 
-        await sendPasswordResetEmail(email, newCode);
+        await sendVendorPasswordResetEmail(email, newCode);
 
         res.status(200).json({
             status: "success",
