@@ -18,7 +18,7 @@ const signToken = (id) => {
 // User Registration
 export const registerUser = async (req, res) => {
   try {
-    const { email, password, confirmPassword, phone, fullName } = req.body;
+    const { fullName, email, password, confirmPassword, phone } = req.body;
 
     // Validate user input
     if (!email || !password || !confirmPassword || !fullName || !phone) {
@@ -49,6 +49,13 @@ export const registerUser = async (req, res) => {
         status: "fail",
         message:
           "Password must be at least 8 characters and include an uppercase letter, number, and symbol",
+      });
+    }
+
+    if (!phone || !/^\d{11}$/.test(phone)) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Phone number must be exactly 11 digits",
       });
     }
 
@@ -180,7 +187,6 @@ export const verifyUser = async (req, res) => {
   }
 };
 
-
 // USer Resend Verification Code
 export const resendVerificationCode = async (req, res) => {
   try {
@@ -221,7 +227,6 @@ export const resendVerificationCode = async (req, res) => {
       status: "success",
       message: "New verification code sent",
     });
-
 
   } catch (err) {
 
@@ -301,4 +306,3 @@ export const login = async (req, res) => {
     });
   }
 };
-
