@@ -80,7 +80,13 @@ export const registerUser = async (req, res) => {
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser && existingUser.isVerified) {
+      return res.status(400).json({
+        status: "fail",
+        message: "User is already registered and verified",
+      });
+
+    } else if (existingUser && !existingUser.isVerified) {
       if (
         existingUser.fullName !== fullName ||
         existingUser.phone !== phone
@@ -91,12 +97,6 @@ export const registerUser = async (req, res) => {
       }
 
       await existingUser.save();
-
-    } else if (existingUser && existingUser.isVerified) {
-      return res.status(400).json({
-        status: "fail",
-        message: "User is already registered and verified",
-      });
     } else {
       // Create new user
       await User.create({
