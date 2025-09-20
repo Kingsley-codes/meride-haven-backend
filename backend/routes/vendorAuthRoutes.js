@@ -10,9 +10,16 @@ import {
     resendVerificationCode,
     handleGoogleLogin,
     googleAuthCallback,
+    uploadKyc,
 } from "../controllers/vendorAuthController.js";
+import multer from "multer";
+
 
 const vendorAuthRouter = express.Router();
+
+
+const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for multer
+
 
 // Registration routes
 
@@ -41,5 +48,16 @@ vendorAuthRouter.post("/resend-reset-code", resendResetCode);   // Resend code
 vendorAuthRouter.get('/google', handleGoogleLogin);
 
 vendorAuthRouter.get('/google/callback', googleAuthCallback);
+
+
+vendorAuthRouter.post(
+    "/upload",
+    upload.fields([
+        { name: "cacCertificate", maxCount: 1 },
+        { name: "directorsId", maxCount: 1 },
+        { name: "businessAddressProof", maxCount: 1 },
+    ]),
+    uploadKyc
+);
 
 export default vendorAuthRouter;

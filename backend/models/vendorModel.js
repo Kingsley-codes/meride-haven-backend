@@ -51,7 +51,7 @@ const vendorSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    cacCertificate: {
+    cac: {
         publicId: String,
         url: String
     },
@@ -59,7 +59,7 @@ const vendorSchema = new mongoose.Schema({
         publicId: String,
         url: String
     },
-    businessAddress: {
+    address: {
         publicId: String,
         url: String
     },

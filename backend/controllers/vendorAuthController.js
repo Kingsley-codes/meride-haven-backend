@@ -4,12 +4,40 @@ import { CodeTypes, VendorVerificationCodes } from '../utils/verificationCodes.j
 import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
 import jwt from "jsonwebtoken";
 import validator from 'validator';
+import { v2 as cloudinary } from "cloudinary";
+import passport from 'passport';
+import streamifier from "streamifier";
+
 
 
 // Helper function to sign JWT tokens
 const signToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: process.env.JWT_EXPIRES_IN
+    });
+};
+
+
+// Configure Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+
+// Helper function to upload a file buffer to Cloudinary
+const uploadToCloudinary = (fileBuffer, folder) => {
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.v2.uploader.upload_stream(
+            { folder },
+            (error, result) => {
+                if (error) return reject(error);
+                resolve(result.secure_url);
+            }
+        );
+
+        streamifier.createReadStream(fileBuffer).pipe(uploadStream);
     });
 };
 
@@ -478,3 +506,62 @@ export const googleAuthCallback = (req, res) => {
         }
     )(req, res);
 };
+
+
+
+// Upload KYC documents
+export const uploadKyc = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!req.files || !req.files.cac || !req.files.directorID || !req.files.address) {
+            return res.status(400).json({
+                error: "All documents are required"
+            });
+        }
+
+        // Upload each document to Cloudinary
+        const cacUrl = await uploadToCloudinary(
+            req.files.cacCertificate[0].buffer,
+            "Meride Haven/kyc"
+        );
+        const directorsIdUrl = await uploadToCloudinary(
+            req.files.directorsId[0].buffer,
+            "Meride Haven/kyc"
+        );
+        const addressProofUrl = await uploadToCloudinary(
+            req.files.businessAddressProof[0].buffer,
+            "Meride Haven/kyc"
+        );
+
+        const kycVendor = await Vendor.findOneAndUpdate({ _id: userId }, {
+            cac: {
+                publicId: cacUrl.public_id,
+                url: cacUrl.secure_url
+            },
+            directorID: {
+                publicId: directorsIdUrl.public_id,
+                url: directorsIdUrl.secure_url
+            },
+            address: {
+                publicId: addressProofUrl.public_id,
+                url: addressProofUrl.secure_url
+            }
+        }, { new: true });
+
+        if (!kycVendor) {
+            return res.status(404).json({
+                error: "Vendor not found"
+            });
+        }
+
+        return res.status(201).json({
+            message: "KYC submitted successfully",
+            kycVendor
+        });
+    } catch (err) {
+        console.error("KYC upload error:", err);
+        return res.status(500).json({ error: "Server error" });
+    }
+};
+
