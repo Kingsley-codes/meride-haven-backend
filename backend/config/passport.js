@@ -6,7 +6,7 @@ import Vendor from '../models/vendorModel.js';
 
 
 const configurePassport = () => {
-    const getCallbackURL = (userType = 'user') => {
+    const getCallbackURL = (userType = 'users') => {
         const baseURL = process.env.NODE_ENV === 'production'
             ? process.env.BACKEND_URL
             : 'http://localhost:3000';
@@ -17,7 +17,7 @@ const configurePassport = () => {
     passport.use('google-user', new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: getCallbackURL("user"),
+        callbackURL: getCallbackURL("users"),
         scope: ['profile', 'email']
     }, async (accessToken, refreshToken, profile, done) => {
         try {
@@ -54,7 +54,7 @@ const configurePassport = () => {
     passport.use('google-vendor', new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        callbackURL: getCallbackURL('vendor'),
+        callbackURL: getCallbackURL('vendors'),
         scope: ['profile', 'email']
     }, async (accessToken, refreshToken, profile, done) => {
         try {
