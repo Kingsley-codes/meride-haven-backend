@@ -492,13 +492,13 @@ export const googleAuthCallback = (req, res) => {
         },
         (err, vendor) => {
             if (err || !vendor) {
-                return res.redirect(`${process.env.FRONTEND_URL}/login`);
+                return res.redirect(`${process.env.FRONTEND_URL}/vendors/login`);
             }
 
             const token = signToken(vendor._id);
 
             if (process.env.FRONTEND_URL) {
-                const redirectUrl = `${process.env.FRONTEND_URL}/?token=${token}`;
+                const redirectUrl = `${process.env.FRONTEND_URL}/vendors/?token=${token}`;
                 return res.redirect(redirectUrl);
             }
 

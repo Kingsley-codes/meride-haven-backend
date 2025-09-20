@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import vendorAuthRouter from './backend/routes/vendorAuthRoutes.js';
 import userRouter from './backend/routes/userAuthRoutes.js';
+import configurePassport from './backend/config/passport.js';
 
 
 
@@ -13,7 +14,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-
+const passport = configurePassport();
 
 app.use(cors({
     origin: [
@@ -24,7 +25,7 @@ app.use(cors({
 }));
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded form data
-
+app.use(passport.initialize());
 
 
 try {
