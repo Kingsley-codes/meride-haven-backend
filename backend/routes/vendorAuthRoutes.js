@@ -53,9 +53,9 @@ vendorAuthRouter.get('/google/callback', googleAuthCallback);
 vendorAuthRouter.post(
     "/upload",
     upload.fields([
-        { name: "cacCertificate", maxCount: 1 },
-        { name: "directorsId", maxCount: 1 },
-        { name: "businessAddressProof", maxCount: 1 },
+        { name: "cac", maxCount: 1 },
+        { name: "directorID", maxCount: 1 },
+        { name: "address", maxCount: 1 },
     ]),
     uploadKyc
 );

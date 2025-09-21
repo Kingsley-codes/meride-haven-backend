@@ -47,9 +47,10 @@ const vendorSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    isApproved: {
-        type: Boolean,
-        default: false
+    approvedStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
     },
     cac: {
         publicId: String,
@@ -58,6 +59,10 @@ const vendorSchema = new mongoose.Schema({
     directorID: {
         publicId: String,
         url: String
+    },
+    kycuploaded: {
+        type: Boolean,
+        default: false
     },
     address: {
         publicId: String,

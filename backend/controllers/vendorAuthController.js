@@ -29,11 +29,11 @@ cloudinary.config({
 // Helper function to upload a file buffer to Cloudinary
 const uploadToCloudinary = (fileBuffer, folder) => {
     return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.v2.uploader.upload_stream(
+        const uploadStream = cloudinary.uploader.upload_stream(
             { folder },
             (error, result) => {
                 if (error) return reject(error);
-                resolve(result.secure_url);
+                resolve(result);
             }
         );
 
@@ -521,33 +521,20 @@ export const uploadKyc = async (req, res) => {
         }
 
         // Upload each document to Cloudinary
-        const cacUrl = await uploadToCloudinary(
-            req.files.cacCertificate[0].buffer,
+        const cacResult = await uploadToCloudinary(
+            req.files.cac[0].buffer,
             "Meride Haven/kyc"
         );
-        const directorsIdUrl = await uploadToCloudinary(
-            req.files.directorsId[0].buffer,
+        const directorsIdResult = await uploadToCloudinary(
+            req.files.directorID[0].buffer,
             "Meride Haven/kyc"
         );
-        const addressProofUrl = await uploadToCloudinary(
-            req.files.businessAddressProof[0].buffer,
+        const addressProofResult = await uploadToCloudinary(
+            req.files.address[0].buffer,
             "Meride Haven/kyc"
         );
 
-        const kycVendor = await Vendor.findOneAndUpdate({ _id: userId }, {
-            cac: {
-                publicId: cacUrl.public_id,
-                url: cacUrl.secure_url
-            },
-            directorID: {
-                publicId: directorsIdUrl.public_id,
-                url: directorsIdUrl.secure_url
-            },
-            address: {
-                publicId: addressProofUrl.public_id,
-                url: addressProofUrl.secure_url
-            }
-        }, { new: true });
+        const kycVendor = await Vendor.findById(userId);
 
         if (!kycVendor) {
             return res.status(404).json({
@@ -555,9 +542,30 @@ export const uploadKyc = async (req, res) => {
             });
         }
 
+        if (kycVendor.kycuploaded) {
+            return res.status(400).json({
+                error: "KYC already uploaded"
+            });
+        }
+
+        kycVendor.cac = {
+            publicId: cacResult.public_id,
+            url: cacResult.secure_url
+        };
+        kycVendor.directorID = {
+            publicId: directorsIdResult.public_id,
+            url: directorsIdResult.secure_url
+        };
+        kycVendor.address = {
+            publicId: addressProofResult.public_id,
+            url: addressProofResult.secure_url
+        };
+        kycVendor.kycuploaded = true;
+
+        await kycVendor.save();
+
         return res.status(201).json({
             message: "KYC submitted successfully",
-            kycVendor
         });
     } catch (err) {
         console.error("KYC upload error:", err);

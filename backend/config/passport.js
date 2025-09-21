@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/userModel.js';
 import Vendor from '../models/vendorModel.js';
+import Admin from '../models/adminModel.js';
 
 
 
@@ -81,6 +82,40 @@ const configurePassport = () => {
 
             await newVendor.save();
             return done(null, newVendor);
+        } catch (error) {
+            return done(error, null);
+        }
+    }));
+
+
+    // Admin Google Strategy
+    passport.use('google-admin', new GoogleStrategy({
+        clientID: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        callbackURL: getCallbackURL('admins'),
+        scope: ['profile', 'email']
+    }, async (accessToken, refreshToken, profile, done) => {
+        try {
+            let admin = await Admin.findOne({ googleId: profile.id });
+
+            if (admin) {
+                return done(null, admin);
+            }
+
+            admin = await Admin.findOne({ email: profile.emails[0].value });
+
+            if (admin) {
+                admin.googleId = profile.id;
+                await admin.save();
+                return done(null, admin);
+            }
+
+            if (!admin) {
+                return done(new Error("No admin account associated with this Google account"), null);
+            }
+
+            await newAdmin.save();
+            return done(null, newAdmin);
         } catch (error) {
             return done(error, null);
         }
