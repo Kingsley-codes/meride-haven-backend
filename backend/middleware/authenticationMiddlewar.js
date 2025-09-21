@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-import Vendor from "../models/vendorModel.js";
 import Admin from "../models/adminModel.js";
+import Vendor from "../models/vendorModel.js";
 
 // Protection Middleware
 export const userAuthenticate = async (req, res, next) => {

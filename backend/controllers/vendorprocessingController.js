@@ -2,10 +2,18 @@ import Vendor from "../models/vendorModel.js";
 
 export const fetchPendingVendors = async (req, res) => {
     try {
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized"
+            });
+        }
+
         const pendingVendors = await Vendor.find({
             kycuploaded: true,
             approvedStatus: 'pending'
-        }).select('directorID cac address businessName _id');
+        }).select('_id businessName directorID cac address');
         res.status(200).json({ success: true, data: pendingVendors });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
@@ -15,7 +23,7 @@ export const fetchPendingVendors = async (req, res) => {
 export const approveVendor = async (req, res) => {
     try {
 
-        const admin = req.admin; // Assuming admin info is attached to req object by auth middleware
+        const admin = req.admin;
         if (!admin) {
             return res.status(403).json({
                 success: false,
@@ -24,7 +32,7 @@ export const approveVendor = async (req, res) => {
         }
 
         const { vendorId } = req.body;
-        const vendor = await Vendor.findById(vendorId).select('directorID cac address businessName _id');
+        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address');
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -40,7 +48,16 @@ export const approveVendor = async (req, res) => {
 export const rejectVendor = async (req, res) => {
     try {
         const { vendorId } = req.body;
-        const vendor = await Vendor.findById(vendorId).select('directorID cac address businessName _id');
+
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized"
+            });
+        }
+
+        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address');
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
