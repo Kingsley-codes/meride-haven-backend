@@ -45,7 +45,7 @@ const serviceSchema = new mongoose.Schema({
     },
     isavailable: {
         type: Boolean,
-        default: true
+        default: false
     },
     driver: {
         type: driverSchema,
@@ -60,6 +60,15 @@ const serviceSchema = new mongoose.Schema({
     averageRating: {
         type: Number,
         default: 0
+    },
+    numOfReviews: {
+        type: Number,
+        default: 0
+    },
+    approvedStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
     },
     createdAt: {
         type: Date,
