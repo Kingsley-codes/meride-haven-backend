@@ -38,7 +38,7 @@ export const approveVendor = async (req, res) => {
         }
         vendor.approvedStatus = 'approved';
         await vendor.save();
-        res.status(200).json({ success: true, message: "Vendor approved", data: vendor });
+        res.status(200).json({ success: true, message: "Vendor approved" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }
@@ -63,7 +63,7 @@ export const rejectVendor = async (req, res) => {
         }
         vendor.approvedStatus = 'rejected';
         await vendor.save();
-        res.status(200).json({ success: true, message: "Vendor rejected", data: vendor });
+        res.status(200).json({ success: true, message: "Vendor rejected" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }
