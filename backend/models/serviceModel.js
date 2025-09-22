@@ -1,18 +1,17 @@
 import mongoose from "mongoose";
 
 const driverSchema = new mongoose.Schema({
-    fullName: {
+    driverName: {
         type: String,
         required: true
     },
-    description: {
+    driverDescription: {
         type: String,
         required: true
     },
-    profilePhoto: {
-        publicId: String,
-        url: String,
-        required: true
+    driverProfilePhoto: {
+        publicId: { type: String, required: true },
+        url: { type: String, required: true }
     }
 });
 
@@ -64,6 +63,15 @@ const serviceSchema = new mongoose.Schema({
     numOfReviews: {
         type: Number,
         default: 0
+    },
+    images: {
+        type: [
+            {
+                publicId: { type: String, required: true },
+                url: { type: String, required: true }
+            }
+        ],
+        required: true
     },
     approvedStatus: {
         type: String,
