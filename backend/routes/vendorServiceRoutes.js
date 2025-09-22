@@ -12,7 +12,7 @@ const vendorServiceRouter = express.Router();
 
 vendorServiceRouter.post('/add', vendorAuthenticate, uploadServiceImages, createService);
 vendorServiceRouter.get('/', vendorAuthenticate, getVendorServices);
-vendorServiceRouter.patch('/update', vendorAuthenticate, updateService);
+vendorServiceRouter.patch('/update', vendorAuthenticate, uploadServiceImages, updateService);
 vendorServiceRouter.delete('/delete', vendorAuthenticate, deleteService);
 
 export default vendorServiceRouter;
