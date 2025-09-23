@@ -5,8 +5,9 @@ import { getAllServices, getServiceById, getServicesByType, searchServices  } fr
 const userServiceRouter = express.Router();
 
 userServiceRouter.get('/', getAllServices);
-userServiceRouter.get('/:id', getServiceById);
 userServiceRouter.get('/filter', getServicesByType);
 userServiceRouter.get('/search', searchServices);
+userServiceRouter.get('/:id', getServiceById);
+
 
 export default userServiceRouter;
