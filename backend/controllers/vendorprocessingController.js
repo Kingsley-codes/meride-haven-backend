@@ -48,7 +48,7 @@ const calculateOverviewStats = async () => {
 };
 
 
-export const fetchPendingVendors = async (req, res) => {
+export const fetchAllVendors = async (req, res) => {
     try {
         const admin = req.admin;
         if (!admin) {
