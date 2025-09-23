@@ -69,8 +69,8 @@ export const getServicesByType = async (req, res) => {
 
     const services = await Service.find({
       servicetype,
-    //   approvedStatus: "approved",
-    //   isavailable: true,
+      approvedStatus: "approved",
+      isavailable: true,
     });
 
     res.status(200).json({
