@@ -58,11 +58,10 @@ export const fetchAllVendors = async (req, res) => {
             });
         }
 
-        const pendingVendors = await Vendor.find({
+        const allVendors = await Vendor.find({
             kycuploaded: true,
-            approvedStatus: 'pending'
-        }).select('_id businessName directorID cac address');
-        res.status(200).json({ success: true, data: pendingVendors });
+        }).select('_id businessName directorID cac address phone');
+        res.status(200).json({ success: true, data: allVendors });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }
@@ -80,7 +79,7 @@ export const approveVendor = async (req, res) => {
         }
 
         const { vendorId } = req.body;
-        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address');
+        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address phone');
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -105,7 +104,7 @@ export const rejectVendor = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address');
+        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address phone');
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }

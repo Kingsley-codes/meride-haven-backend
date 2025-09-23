@@ -30,7 +30,7 @@ export const createService = async (req, res) => {
         }
 
 
-        const { serviceName, location, description, servicetype, price, driverName, driverDescription } = req.body;
+        const { serviceName, location, description, servicetype, availability, price, driverName, driverDescription } = req.body;
 
         const serviceImages = req.files?.images || [];
         const driverPhotoFile = req.files?.driverPhoto?.[0];
@@ -39,7 +39,7 @@ export const createService = async (req, res) => {
         if (serviceImages.length > 0) filesToCleanup.push(...serviceImages);
         if (driverPhotoFile) filesToCleanup.push(driverPhotoFile);
 
-        if (!serviceName || !location || !description || !servicetype || !price) {
+        if (!serviceName || !location || !description || !servicetype || !price || !availability) {
 
             return res.status(400).json({
                 message: "All fields are required"
@@ -108,6 +108,7 @@ export const createService = async (req, res) => {
             vendorId: vendorID,
             location,
             description,
+            availability,
             images: uploadedServiceImages,
             servicetype,
             driver: servicetype === 'car rental' ? {
@@ -200,7 +201,7 @@ export const updateService = async (req, res) => {
             });
         }
 
-        const { serviceId, serviceName, location, description, isavailable, price, driverName, driverDescription } = req.body;
+        const { serviceId, serviceName, location, description, availability, isavailable, price, driverName, driverDescription } = req.body;
 
         const serviceImages = req.files?.images || [];
         const driverPhotoFile = req.files?.driverPhoto?.[0];
@@ -224,6 +225,7 @@ export const updateService = async (req, res) => {
         if (location) service.location = location;
         if (description) service.description = description;
         if (price) service.price = price;
+        if (availability) service.availability = availability;
         if (typeof isavailable === 'boolean') service.isavailable = isavailable;
 
         // Handle service images update

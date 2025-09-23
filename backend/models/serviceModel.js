@@ -46,6 +46,11 @@ const serviceSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    availability: {
+        type: String,
+        enum: ['daily', 'hourly', 'event-based'],
+        required: true
+    },
     driver: {
         type: driverSchema,
         required: function () {
