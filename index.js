@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import vendorAuthRouter from './backend/routes/vendorAuthRoutes.js';
 import userRouter from './backend/routes/userAuthRoutes.js';
+import userServiceRouter from './backend/routes/userServiceRoutes.js';
 import configurePassport from './backend/config/passport.js';
 import adminAuthRouter from './backend/routes/adminAuthRoutes.js';
 import vendorProcessingRouter from './backend/routes/vendorProcessingRoutes.js';
@@ -50,6 +51,7 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/users/auth', userRouter);
+app.use('/api/users/services', userServiceRouter);
 app.use('/api/vendors/auth', vendorAuthRouter);
 app.use('/api/vendors/services', vendorServiceRouter);
 app.use('/api/admin/auth', adminAuthRouter);
