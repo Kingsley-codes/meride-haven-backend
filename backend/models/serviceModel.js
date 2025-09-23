@@ -44,7 +44,7 @@ const serviceSchema = new mongoose.Schema({
     },
     isavailable: {
         type: Boolean,
-        default: false
+        default: true
     },
     driver: {
         type: driverSchema,
