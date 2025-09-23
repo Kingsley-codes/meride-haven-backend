@@ -42,7 +42,7 @@ const uploadToCloudinary = (fileBuffer, folder) => {
 };
 
 
-// User Registration
+// Vendor Registration
 export const registerVendor = async (req, res) => {
     try {
         const { businessName, email, password, confirmPassword, phone } = req.body;
@@ -99,6 +99,87 @@ export const registerVendor = async (req, res) => {
             businessName,
             email,
             phone,
+            password: await bcrypt.hash(password, 12),
+            isVerified: false
+        });
+
+        const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
+        await sendVendorVerificationEmail(email, verificationCode, false);
+
+        res.status(200).json({
+            status: "success",
+            message: "Verification code sent",
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: "Registration failed",
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
+// Driver Registration
+export const registerDriver = async (req, res) => {
+    try {
+        const { businessName, email, password, confirmPassword, phone } = req.body;
+
+        // Validations
+        if (!businessName || typeof businessName !== 'string') {
+            return res.status(400).json({
+                status: "fail",
+                message: "Business name must must exist and must be a string"
+            });
+        }
+
+        if (!phone || !/^\d{11}$/.test(phone)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Phone number must be exactly 11 digits"
+            });
+        }
+
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Invalid email format"
+            });
+        }
+
+        if (!validator.isStrongPassword(password, {
+            minLength: 8,
+            minUppercase: 1,
+            minSymbols: 1,
+            minNumbers: 1
+        })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Password must be at least 8 characters and include an uppercase letter, number, and symbol"
+            });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Passwords don't match"
+            });
+        }
+
+        if (await Vendor.findOne({ email })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Email already in use"
+            });
+        }
+
+        await Vendor.create({
+            businessName,
+            email,
+            phone,
+            vendortype: 'driver',
             password: await bcrypt.hash(password, 12),
             isVerified: false
         });
@@ -573,3 +654,136 @@ export const uploadKyc = async (req, res) => {
     }
 };
 
+
+export const driverKyc = async (req, res) => {
+    let filesToCleanup = []; // Track files for cleanup
+
+    try {
+        const { vendorId, vehicleOwner, availability, period, experience, vehicleDetails } = req.body;
+
+        if (!req.files || !req.files.passport || !req.files.license || !req.files.address) {
+            return res.status(400).json({
+                error: "All documents are required"
+            });
+        }
+
+        if (!availability || (availability !== 'full-time' && availability !== 'part-time')) {
+            return res.status(400).json({
+                error: "Invalid availability status"
+            });
+        }
+
+        if (availability === 'part-time' && !period) {
+            return res.status(400).json({
+                error: "Period is required for part-time availability"
+            });
+        }
+
+        if (!experience || experience < 0) {
+            return res.status(400).json({
+                error: "Invalid experience"
+            });
+        }
+
+        if (!vehicleOwner || (vehicleOwner && !vehicleDetails)) {
+            return res.status(400).json({
+                error: "Invalid vehicle ownership details"
+            });
+        }
+
+        const passportFile = req.files.passport[0];
+        const licenseFile = req.files.license[0];
+        const addressFile = req.files.address[0];
+
+        if (passportFile) {
+            filesToCleanup.push(passportFile);
+        }
+
+        if (licenseFile) {
+            filesToCleanup.push(licenseFile);
+        }
+
+        if (addressFile) {
+            filesToCleanup.push(addressFile);
+        }
+
+        // Upload each document to Cloudinary
+        const passportResult = await uploadToCloudinary(
+            passportFile.buffer,
+            "Meride Haven/kyc"
+        );
+        const licenseResult = await uploadToCloudinary(
+            licenseFile.buffer,
+            "Meride Haven/kyc"
+        );
+        const addressResult = await uploadToCloudinary(
+            addressFile.buffer,
+            "Meride Haven/kyc"
+        );
+
+        const driverVendor = await Vendor.findById(vendorId);
+
+        if (!driverVendor) {
+            return res.status(404).json({
+                error: "Vendor not found"
+            });
+        }
+
+        driverVendor.driverDetails = {
+            vehicleOwner,
+            availability,
+            period,
+            experience,
+            vehicleDetails,
+            passport: {
+                publicId: passportResult.public_id,
+                url: passportResult.secure_url
+            },
+            license: {
+                publicId: licenseResult.public_id,
+                url: licenseResult.secure_url
+            },
+            address: {
+                publicId: addressResult.public_id,
+                url: addressResult.secure_url
+            }
+        };
+
+        // Delete file immediately after upload
+        if (fs.existsSync(passportFile.path)) {
+            fs.unlinkSync(passportFile.path);
+        }
+
+        if (fs.existsSync(licenseFile.path)) {
+            fs.unlinkSync(licenseFile.path);
+        }
+
+        if (fs.existsSync(addressFile.path)) {
+            fs.unlinkSync(addressFile.path);
+        }
+
+        driverVendor.kycuploaded = true;
+
+        await driverVendor.save();
+
+        return res.status(201).json({
+            message: "Driver KYC submitted successfully"
+        });
+    } catch (error) {
+        // Cleanup any remaining files on error
+        filesToCleanup.forEach(file => {
+            if (file.path && fs.existsSync(file.path)) {
+                try {
+                    fs.unlinkSync(file.path);
+                } catch (unlinkError) {
+                    console.error('Error deleting file:', unlinkError);
+                }
+            }
+        });
+
+        res.status(500).json({
+            message: "Error creating service",
+            error: error.message
+        });
+    }
+};
