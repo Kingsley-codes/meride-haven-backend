@@ -71,7 +71,7 @@ export const createService = async (req, res) => {
         const uploadedServiceImages = [];
         for (const image of serviceImages) {
             const result = await cloudinary.uploader.upload(image.path, {
-                folder: 'MerideHaven/serviceImages'
+                folder: 'Meride Haven/serviceImages'
             });
             uploadedServiceImages.push({
                 publicId: result.public_id,
@@ -89,7 +89,7 @@ export const createService = async (req, res) => {
         let driverProfile = {};
         if (servicetype === 'car rental' && driverPhotoFile) {
             const driverPhotoResult = await cloudinary.uploader.upload(driverPhotoFile.path, {
-                folder: 'MerideHaven/driverPhotos'
+                folder: 'Meride Haven/driverPhotos'
             });
             driverProfile = {
                 publicId: driverPhotoResult.public_id,

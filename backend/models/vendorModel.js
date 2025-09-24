@@ -96,14 +96,11 @@ const vendorSchema = new mongoose.Schema({
     },
     approvedStatus: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'],
+        enum: ['pending', 'approved', 'rejected', 'suspended'],
         default: 'pending'
     },
     driverDetails: {
-        type: driverSchema,
-        required: function () {
-            return this.vendortype === 'driver';
-        }
+        type: driverSchema
     },
     cac: {
         publicId: String,

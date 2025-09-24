@@ -12,8 +12,10 @@ import {
     googleAuthCallback,
     uploadKyc,
     registerDriver,
+    driverKyc,
 } from "../controllers/vendorAuthController.js";
 import multer from "multer";
+import { uploadDriverImages } from "../middleware/uploadMiddleware.js";
 
 
 const vendorAuthRouter = express.Router();
@@ -61,6 +63,9 @@ vendorAuthRouter.post(
         { name: "address", maxCount: 1 },
     ]),
     uploadKyc
-);
+)
+
+vendorAuthRouter.post("/driverkyc", uploadDriverImages, driverKyc); // Step 3: Verify vendor with code
+
 
 export default vendorAuthRouter;

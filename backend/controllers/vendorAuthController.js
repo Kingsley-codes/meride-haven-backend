@@ -7,6 +7,7 @@ import validator from 'validator';
 import { v2 as cloudinary } from "cloudinary";
 import passport from 'passport';
 import streamifier from "streamifier";
+import fs from 'fs';
 
 
 
@@ -695,6 +696,7 @@ export const driverKyc = async (req, res) => {
         const licenseFile = req.files.license[0];
         const addressFile = req.files.address[0];
 
+
         if (passportFile) {
             filesToCleanup.push(passportFile);
         }
@@ -708,22 +710,24 @@ export const driverKyc = async (req, res) => {
         }
 
         // Upload each document to Cloudinary
-        const passportResult = await uploadToCloudinary(
-            passportFile.buffer,
+        const passportResult = await cloudinary.uploader.upload(
+            passportFile.path,
             "Meride Haven/kyc"
         );
-        const licenseResult = await uploadToCloudinary(
-            licenseFile.buffer,
+        const licenseResult = await cloudinary.uploader.upload(
+            licenseFile.path,
             "Meride Haven/kyc"
         );
-        const addressResult = await uploadToCloudinary(
-            addressFile.buffer,
+        const addressResult = await cloudinary.uploader.upload(
+            addressFile.path,
             "Meride Haven/kyc"
         );
 
         const driverVendor = await Vendor.findById(vendorId);
 
         if (!driverVendor) {
+            // Cleanup files if vendor not found
+            cleanupFiles(filesToCleanup);
             return res.status(404).json({
                 error: "Vendor not found"
             });
