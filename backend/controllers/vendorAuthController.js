@@ -712,22 +712,20 @@ export const driverKyc = async (req, res) => {
         // Upload each document to Cloudinary
         const passportResult = await cloudinary.uploader.upload(
             passportFile.path,
-            "Meride Haven/kyc"
+            { folder: "Meride Haven/kyc" }
         );
         const licenseResult = await cloudinary.uploader.upload(
             licenseFile.path,
-            "Meride Haven/kyc"
+            { folder: "Meride Haven/kyc" }
         );
         const addressResult = await cloudinary.uploader.upload(
             addressFile.path,
-            "Meride Haven/kyc"
+            { folder: "Meride Haven/kyc" }
         );
 
         const driverVendor = await Vendor.findById(vendorId);
 
         if (!driverVendor) {
-            // Cleanup files if vendor not found
-            cleanupFiles(filesToCleanup);
             return res.status(404).json({
                 error: "Vendor not found"
             });
