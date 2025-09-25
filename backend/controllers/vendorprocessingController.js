@@ -60,7 +60,7 @@ export const fetchAllVendors = async (req, res) => {
 
         const allVendors = await Vendor.find({
             kycuploaded: true,
-        }).select('_id businessName directorID cac address phone approvedStatus');
+        }).select('-password -googleID');
         res.status(200).json({ success: true, data: allVendors });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
@@ -79,7 +79,7 @@ export const approveVendor = async (req, res) => {
         }
 
         const { vendorId } = req.body;
-        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address phone approvedStatus');
+        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -94,6 +94,33 @@ export const approveVendor = async (req, res) => {
 
 export const rejectVendor = async (req, res) => {
     try {
+        const { vendorId, declineReason } = req.body;
+
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized"
+            });
+        }
+
+        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
+        if (!vendor) {
+            return res.status(404).json({ success: false, message: "Vendor not found" });
+        }
+        vendor.approvedStatus = 'rejected';
+        vendor.declineReason = declineReason;
+        await vendor.save();
+        res.status(200).json({ success: true, message: "Vendor rejected" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+
+
+export const suspendVendor = async (req, res) => {
+    try {
         const { vendorId } = req.body;
 
         const admin = req.admin;
@@ -104,13 +131,13 @@ export const rejectVendor = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findById(vendorId).select('_id businessName directorID cac address phone approvedStatus');
+        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
-        vendor.approvedStatus = 'rejected';
+        vendor.status = 'suspended';
         await vendor.save();
-        res.status(200).json({ success: true, message: "Vendor rejected" });
+        res.status(200).json({ success: true, message: "Vendor suspended" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }
@@ -177,7 +204,7 @@ export const fetchAllServices = async (req, res) => {
 
 export const declineService = async (req, res) => {
     try {
-        const { serviceId } = req.body;
+        const { serviceId, declineReason } = req.body;
 
         const admin = req.admin;
         if (!admin) {
@@ -202,6 +229,7 @@ export const declineService = async (req, res) => {
         }
 
         service.approvedStatus = 'rejected';
+        service.declineReason = declineReason;
         await service.save();
 
         res.status(200).json({

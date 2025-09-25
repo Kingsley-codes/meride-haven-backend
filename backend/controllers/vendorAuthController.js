@@ -8,6 +8,7 @@ import { v2 as cloudinary } from "cloudinary";
 import passport from 'passport';
 import streamifier from "streamifier";
 import fs from 'fs';
+import Driver from '../models/driverModel.js';
 
 
 
@@ -126,13 +127,13 @@ export const registerVendor = async (req, res) => {
 // Driver Registration
 export const registerDriver = async (req, res) => {
     try {
-        const { businessName, email, password, confirmPassword, phone } = req.body;
+        const { driverName, email, password, confirmPassword, phone, city } = req.body;
 
         // Validations
-        if (!businessName || typeof businessName !== 'string') {
+        if (!driverName || typeof driverName !== 'string') {
             return res.status(400).json({
                 status: "fail",
-                message: "Business name must must exist and must be a string"
+                message: "Driver name must must exist and must be a string"
             });
         }
 
@@ -147,6 +148,13 @@ export const registerDriver = async (req, res) => {
             return res.status(400).json({
                 status: "fail",
                 message: "Invalid email format"
+            });
+        }
+
+        if (!city || typeof city !== 'string') {
+            return res.status(400).json({
+                status: "fail",
+                message: "City must must exist and must be a string"
             });
         }
 
@@ -169,18 +177,18 @@ export const registerDriver = async (req, res) => {
             });
         }
 
-        if (await Vendor.findOne({ email })) {
+        if (await Driver.findOne({ email })) {
             return res.status(400).json({
                 status: "fail",
                 message: "Email already in use"
             });
         }
 
-        await Vendor.create({
-            businessName,
+        await Driver.create({
             email,
             phone,
-            vendortype: 'driver',
+            driverName,
+            city,
             password: await bcrypt.hash(password, 12),
             isVerified: false
         });

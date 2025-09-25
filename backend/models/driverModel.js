@@ -2,15 +2,10 @@ import mongoose from "mongoose";
 import validator from "validator";
 
 
-const vendorSchema = new mongoose.Schema({
-    businessName: {
+const driverSchema = new mongoose.Schema({
+    driverName: {
         type: String,
-        sparse: true,
-        trim: true
-    },
-    vendorName: {
-        type: String,
-        trim: true
+        required: true
     },
     email: {
         type: String,
@@ -61,34 +56,56 @@ const vendorSchema = new mongoose.Schema({
     declineReason: {
         type: String
     },
-    cac: {
-        publicId: String,
-        url: String
+    availability: {
+        type: String,
+        enum: ['full-time', 'part-time'],
     },
-    directorID: {
-        publicId: String,
-        url: String
+    period: {
+        type: String,
+        required: function () {
+            return this.availability === 'part-time'; // Required if availability is part-time
+        },
     },
-    kycuploaded: {
+    city: {
+        type: String,
+        required: true
+    },
+    experience: {
+        type: Number,
+    },
+    vehicleOwner: {
         type: Boolean,
-        default: false
+    },
+    vehicleDetails: {
+        type: String,
+        required: function () {
+            return this.vehicleOwner; // Required if vehicleOwner is true
+        },
+    },
+    passport: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+    license: {
+        publicId: { type: String },
+        url: { type: String }
     },
     address: {
-        publicId: String,
-        url: String
-    },
-    averageRating: {
-        type: Number,
-        default: 0
+        publicId: { type: String },
+        url: { type: String }
     },
     completedBookings: {
         type: Number,
         default: 0
     },
-}, { timestamps: true }
+    averageRating: {
+        type: Number,
+        default: 0
+    }
+},
+    { timestamps: true }
 );
 
+const Driver = mongoose.model('Driver', driverSchema);
 
-const Vendor = mongoose.model("Vendor", vendorSchema);
-
-export default Vendor;
+export default Driver;
