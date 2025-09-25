@@ -61,6 +61,9 @@ const vendorSchema = new mongoose.Schema({
     declineReason: {
         type: String
     },
+    suspendReason: {
+        type: String
+    },
     cac: {
         publicId: String,
         url: String

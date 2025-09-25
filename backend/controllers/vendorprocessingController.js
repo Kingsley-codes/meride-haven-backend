@@ -121,7 +121,7 @@ export const rejectVendor = async (req, res) => {
 
 export const suspendVendor = async (req, res) => {
     try {
-        const { vendorId } = req.body;
+        const { vendorId, suspendReason } = req.body;
 
         const admin = req.admin;
         if (!admin) {
@@ -136,8 +136,34 @@ export const suspendVendor = async (req, res) => {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
         vendor.status = 'suspended';
+        vendor.suspendReason = suspendReason;
         await vendor.save();
         res.status(200).json({ success: true, message: "Vendor suspended" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};
+
+
+export const activateVendor = async (req, res) => {
+    try {
+        const { vendorId } = req.body;
+
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized"
+            });
+        }
+
+        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
+        if (!vendor) {
+            return res.status(404).json({ success: false, message: "Vendor not found" });
+        }
+        vendor.status = 'active';
+        await vendor.save();
+        res.status(200).json({ success: true, message: "Vendor activated" });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }

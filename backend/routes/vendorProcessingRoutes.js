@@ -1,5 +1,5 @@
 import express from "express";
-import { approveService, approveVendor, declineService, fetchAllServices, fetchAllVendors, rejectVendor, suspendVendor } from "../controllers/vendorprocessingController.js";
+import { activateVendor, approveService, approveVendor, declineService, fetchAllServices, fetchAllVendors, rejectVendor, suspendVendor } from "../controllers/vendorprocessingController.js";
 import { adminAuthenticate } from "../middleware/authenticationMiddlewar.js";
 
 
@@ -12,6 +12,7 @@ vendorProcessingRouter.get("/pending", adminAuthenticate, fetchAllVendors);
 vendorProcessingRouter.post("/approve", adminAuthenticate, approveVendor);
 vendorProcessingRouter.post("/reject", adminAuthenticate, rejectVendor);
 vendorProcessingRouter.post("/suspend", adminAuthenticate, suspendVendor);
+vendorProcessingRouter.post("/activate", adminAuthenticate, activateVendor);
 
 
 vendorProcessingRouter.post("/services/decline", adminAuthenticate, declineService);
