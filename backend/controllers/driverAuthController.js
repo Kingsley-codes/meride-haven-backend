@@ -1,5 +1,4 @@
 import bcrypt from 'bcrypt';
-import Vendor from '../models/vendorModel.js';
 import { CodeTypes, VendorVerificationCodes } from '../utils/verificationCodes.js';
 import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
 import jwt from "jsonwebtoken";
@@ -7,6 +6,8 @@ import validator from 'validator';
 import { v2 as cloudinary } from "cloudinary";
 import passport from 'passport';
 import streamifier from "streamifier";
+import fs from 'fs';
+import Driver from '../models/driverModel.js';
 
 
 
@@ -42,16 +43,17 @@ const uploadToCloudinary = (fileBuffer, folder) => {
 };
 
 
-// Vendor Registration
-export const registerVendor = async (req, res) => {
+
+// Driver Registration
+export const registerDriver = async (req, res) => {
     try {
-        const { businessName, email, password, confirmPassword, phone } = req.body;
+        const { driverName, email, password, confirmPassword, phone, city } = req.body;
 
         // Validations
-        if (!businessName || typeof businessName !== 'string') {
+        if (!driverName || typeof driverName !== 'string') {
             return res.status(400).json({
                 status: "fail",
-                message: "Business name must must exist and must be a string"
+                message: "Driver name must must exist and must be a string"
             });
         }
 
@@ -66,6 +68,13 @@ export const registerVendor = async (req, res) => {
             return res.status(400).json({
                 status: "fail",
                 message: "Invalid email format"
+            });
+        }
+
+        if (!city || typeof city !== 'string') {
+            return res.status(400).json({
+                status: "fail",
+                message: "City must must exist and must be a string"
             });
         }
 
@@ -88,17 +97,18 @@ export const registerVendor = async (req, res) => {
             });
         }
 
-        if (await Vendor.findOne({ email })) {
+        if (await Driver.findOne({ email })) {
             return res.status(400).json({
                 status: "fail",
                 message: "Email already in use"
             });
         }
 
-        await Vendor.create({
-            businessName,
+        await Driver.create({
             email,
             phone,
+            driverName,
+            city,
             password: await bcrypt.hash(password, 12),
             isVerified: true
         });
@@ -122,9 +132,8 @@ export const registerVendor = async (req, res) => {
 };
 
 
-
 // Email Verification
-export const verifyVendor = async (req, res) => {
+export const verifyDriver = async (req, res) => {
     try {
         const { verificationCode, email } = req.body;
 
@@ -132,13 +141,13 @@ export const verifyVendor = async (req, res) => {
             return res.status(400).json({ status: "fail", message: "Invalid code" });
         }
 
-        const vendor = await Vendor.findOneAndUpdate(
+        const vendor = await Driver.findOneAndUpdate(
             { email },
             { isVerified: true },
             { new: true }
         );
 
-        if (!vendor) return res.status(404).json({ status: "fail", message: "Vendor not found" });
+        if (!vendor) return res.status(404).json({ status: "fail", message: "Driver not found" });
 
         const token = signToken(vendor._id);
         vendor.password = undefined;
@@ -172,12 +181,12 @@ export const verifyVendor = async (req, res) => {
 
 
 // Resend Verification Code
-export const resendVerificationCode = async (req, res) => {
+export const resendDriverVerificationCode = async (req, res) => {
     try {
         const { email } = req.body;
 
         // // Check if vendor exists
-        const vendor = await Vendor.findOne({ email });
+        const vendor = await Driver.findOne({ email });
         if (!vendor) {
             return res.status(404).json({
                 status: "fail",
@@ -236,7 +245,7 @@ export const resendVerificationCode = async (req, res) => {
 
 
 // Login
-export const login = async (req, res) => {
+export const driverLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -247,7 +256,7 @@ export const login = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findOne({ email }).select('+password');
+        const vendor = await Driver.findOne({ email }).select('+password');
         if (!vendor || !(await bcrypt.compare(password, vendor.password))) {
             return res.status(401).json({
                 status: "fail",
@@ -295,7 +304,7 @@ export const login = async (req, res) => {
 
 
 // Password Reset - Stage 1: Request Reset
-export const requestPasswordReset = async (req, res) => {
+export const requestDriverPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
 
@@ -303,9 +312,9 @@ export const requestPasswordReset = async (req, res) => {
             return res.status(400).json({ status: "fail", message: "Invalid email" });
         }
 
-        const vendor = await Vendor.findOne({ email });
+        const vendor = await Driver.findOne({ email });
         if (!vendor) {
-            return res.status(404).json({ status: "fail", message: "Vendor not found" });
+            return res.status(404).json({ status: "fail", message: "Driver not found" });
         }
 
         const code = VendorVerificationCodes.generateResetCode(email);
@@ -336,7 +345,7 @@ export const requestPasswordReset = async (req, res) => {
 
 
 // Password Reset - Stage 2: Verify Code
-export const verifyResetCode = async (req, res) => {
+export const verifyDriverResetCode = async (req, res) => {
     try {
         const { email, code } = req.body;
         const verification = VendorVerificationCodes.verifyResetCode(email, code);
@@ -365,7 +374,7 @@ export const verifyResetCode = async (req, res) => {
 
 
 // Password Reset - Stage 3: Reset Password
-export const resetPassword = async (req, res) => {
+export const resetDriverPassword = async (req, res) => {
     try {
         const { email, newPassword, confirmPassword } = req.body;
 
@@ -390,7 +399,7 @@ export const resetPassword = async (req, res) => {
         }
 
         // Update the vendor and get the updated document
-        const vendor = await Vendor.findOneAndUpdate(
+        const vendor = await Driver.findOneAndUpdate(
             { email },
             { password: await bcrypt.hash(newPassword, 12) },
             { new: true } // This ensures we get the updated document
@@ -399,7 +408,7 @@ export const resetPassword = async (req, res) => {
         if (!vendor) {
             return res.status(404).json({
                 status: "fail",
-                message: "Vendor not found"
+                message: "Driver not found"
             });
         }
 
@@ -437,7 +446,7 @@ export const resetPassword = async (req, res) => {
 
 
 // Resend Reset Code
-export const resendResetCode = async (req, res) => {
+export const resendDriverResetCode = async (req, res) => {
     try {
         const { email } = req.body;
 
@@ -509,69 +518,135 @@ export const googleAuthCallback = (req, res) => {
 };
 
 
+export const driverKyc = async (req, res) => {
+    let filesToCleanup = []; // Track files for cleanup
 
-// Upload KYC documents
-export const uploadKyc = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { vendorId, vehicleOwner, availability, period, experience, vehicleDetails } = req.body;
 
-        if (!req.files || !req.files.cac || !req.files.directorID || !req.files.address) {
+        if (!req.files || !req.files.passport || !req.files.license || !req.files.address) {
             return res.status(400).json({
                 error: "All documents are required"
             });
         }
 
+        if (!availability || (availability !== 'full-time' && availability !== 'part-time')) {
+            return res.status(400).json({
+                error: "Invalid availability status"
+            });
+        }
+
+        if (availability === 'part-time' && !period) {
+            return res.status(400).json({
+                error: "Period is required for part-time availability"
+            });
+        }
+
+        if (!experience || experience < 0) {
+            return res.status(400).json({
+                error: "Invalid experience"
+            });
+        }
+
+        if (!vehicleOwner || (vehicleOwner && !vehicleDetails)) {
+            return res.status(400).json({
+                error: "Invalid vehicle ownership details"
+            });
+        }
+
+        const passportFile = req.files.passport[0];
+        const licenseFile = req.files.license[0];
+        const addressFile = req.files.address[0];
+
+
+        if (passportFile) {
+            filesToCleanup.push(passportFile);
+        }
+
+        if (licenseFile) {
+            filesToCleanup.push(licenseFile);
+        }
+
+        if (addressFile) {
+            filesToCleanup.push(addressFile);
+        }
+
         // Upload each document to Cloudinary
-        const cacResult = await uploadToCloudinary(
-            req.files.cac[0].buffer,
-            "Meride Haven/kyc"
+        const passportResult = await cloudinary.uploader.upload(
+            passportFile.path,
+            { folder: "Meride Haven/kyc" }
         );
-        const directorsIdResult = await uploadToCloudinary(
-            req.files.directorID[0].buffer,
-            "Meride Haven/kyc"
+        const licenseResult = await cloudinary.uploader.upload(
+            licenseFile.path,
+            { folder: "Meride Haven/kyc" }
         );
-        const addressProofResult = await uploadToCloudinary(
-            req.files.address[0].buffer,
-            "Meride Haven/kyc"
+        const addressResult = await cloudinary.uploader.upload(
+            addressFile.path,
+            { folder: "Meride Haven/kyc" }
         );
 
-        const kycVendor = await Vendor.findById(userId);
+        const driverVendor = await Driver.findById(vendorId);
 
-        if (!kycVendor) {
+        if (!driverVendor) {
             return res.status(404).json({
                 error: "Vendor not found"
             });
         }
 
-        if (kycVendor.kycuploaded) {
-            return res.status(400).json({
-                error: "KYC already uploaded"
-            });
+
+        driverVendor.vehicleOwner = vehicleOwner;
+        driverVendor.availability = availability;
+        driverVendor.period = period;
+        driverVendor.experience = experience;
+        driverVendor.vehicleDetails = vehicleDetails;
+        driverVendor.passport = {
+            publicId: passportResult.public_id,
+            url: passportResult.secure_url
+        };
+        driverVendor.license = {
+            publicId: licenseResult.public_id,
+            url: licenseResult.secure_url
+        };
+        driverVendor.address = {
+            publicId: addressResult.public_id,
+            url: addressResult.secure_url
+        };
+
+        // Delete file immediately after upload
+        if (fs.existsSync(passportFile.path)) {
+            fs.unlinkSync(passportFile.path);
         }
 
-        kycVendor.cac = {
-            publicId: cacResult.public_id,
-            url: cacResult.secure_url
-        };
-        kycVendor.directorID = {
-            publicId: directorsIdResult.public_id,
-            url: directorsIdResult.secure_url
-        };
-        kycVendor.address = {
-            publicId: addressProofResult.public_id,
-            url: addressProofResult.secure_url
-        };
-        kycVendor.kycuploaded = true;
+        if (fs.existsSync(licenseFile.path)) {
+            fs.unlinkSync(licenseFile.path);
+        }
 
-        await kycVendor.save();
+        if (fs.existsSync(addressFile.path)) {
+            fs.unlinkSync(addressFile.path);
+        }
+
+        driverVendor.kycuploaded = true;
+
+        await driverVendor.save();
 
         return res.status(201).json({
-            message: "KYC submitted successfully",
+            message: "Driver KYC submitted successfully"
         });
-    } catch (err) {
-        console.error("KYC upload error:", err);
-        return res.status(500).json({ error: "Server error" });
+    } catch (error) {
+        // Cleanup any remaining files on error
+        filesToCleanup.forEach(file => {
+            if (file.path && fs.existsSync(file.path)) {
+                try {
+                    fs.unlinkSync(file.path);
+                } catch (unlinkError) {
+                    console.error('Error deleting file:', unlinkError);
+                }
+            }
+        });
+
+        res.status(500).json({
+            message: "Error creating service",
+            error: error.message
+        });
     }
 };
-
-
