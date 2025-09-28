@@ -114,14 +114,14 @@ export const registerUser = async (req, res) => {
         password: hashedPassword,
         fullName,
         phone,
-        isVerified: false,
+        isVerified: true,
       });
     }
 
     // Send verification email
-    const verificationCode =
-      UserVerificationCodes.generateVerificationCode(email);
-    await sendUserVerificationEmail(email, verificationCode, false);
+    // const verificationCode =
+    //   UserVerificationCodes.generateVerificationCode(email);
+    // await sendUserVerificationEmail(email, verificationCode, false);
 
     // Respond with success
     res.status(201).json({

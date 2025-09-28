@@ -69,14 +69,17 @@ const serviceSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    images: {
-        type: [
-            {
-                publicId: { type: String, required: true },
-                url: { type: String, required: true }
-            }
-        ],
-        required: true
+    image1: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+    image2: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+    image3: {
+        publicId: { type: String },
+        url: { type: String }
     },
     approvedStatus: {
         type: String,

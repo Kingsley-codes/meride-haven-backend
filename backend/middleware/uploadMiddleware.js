@@ -18,7 +18,9 @@ const upload = multer({
 });
 
 export const uploadServiceImages = upload.fields([
-    { name: 'images', maxCount: 3 },
+    { name: 'image1', maxCount: 1 },
+    { name: 'image2', maxCount: 1 },
+    { name: 'image3', maxCount: 1 },
     { name: 'driverPhoto', maxCount: 1 }
 ]);
 

@@ -32,11 +32,15 @@ export const createService = async (req, res) => {
 
         const { serviceName, location, description, servicetype, availability, price, driverName, driverDescription } = req.body;
 
-        const serviceImages = req.files?.images || [];
         const driverPhotoFile = req.files?.driverPhoto?.[0];
+        const image1 = req.files?.image1?.[0];
+        const image2 = req.files?.image2?.[0];
+        const image3 = req.files?.image3?.[0];
 
         // Track all files for cleanup
-        if (serviceImages.length > 0) filesToCleanup.push(...serviceImages);
+        if (image1) filesToCleanup.push(image1);
+        if (image2) filesToCleanup.push(image2);
+        if (image3) filesToCleanup.push(image3);
         if (driverPhotoFile) filesToCleanup.push(driverPhotoFile);
 
         if (!serviceName || !location || !description || !servicetype || !price || !availability) {
@@ -47,12 +51,12 @@ export const createService = async (req, res) => {
         }
 
         // Validate service images (1-3)
-        if (serviceImages.length === 0) {
+        if ([image1, image2, image3].length === 0) {
             return res.status(400).json({
                 message: "At least one service image is required"
             });
         }
-        if (serviceImages.length > 3) {
+        if ([image1, image2, image3].length > 3) {
             return res.status(400).json({
                 message: "Maximum 3 service images allowed"
             });
@@ -68,22 +72,57 @@ export const createService = async (req, res) => {
 
 
         // Upload service images
-        const uploadedServiceImages = [];
-        for (const image of serviceImages) {
-            const result = await cloudinary.uploader.upload(image.path, {
+
+        let image1Result = {};
+        if (image1) {
+            const result = await cloudinary.uploader.upload(image1.path, {
                 folder: 'Meride Haven/serviceImages'
             });
-            uploadedServiceImages.push({
+
+            image1Result = {
                 publicId: result.public_id,
                 url: result.secure_url
-            });
+            };
 
             // Delete file immediately after upload
-            if (fs.existsSync(image.path)) {
-                fs.unlinkSync(image.path);
+            if (fs.existsSync(image1.path)) {
+                fs.unlinkSync(image1.path);
             }
         }
 
+        let image2Result = {};
+        if (image2) {
+            const result = await cloudinary.uploader.upload(image2.path, {
+                folder: 'Meride Haven/serviceImages'
+            });
+
+            image2Result = {
+                publicId: result.public_id,
+                url: result.secure_url
+            };
+
+            // Delete file immediately after upload
+            if (fs.existsSync(image2.path)) {
+                fs.unlinkSync(image2.path);
+            }
+        }
+
+        let image3Result = {};
+        if (image3) {
+            const result = await cloudinary.uploader.upload(image3.path, {
+                folder: 'Meride Haven/serviceImages'
+            });
+
+            image3Result = {
+                publicId: result.public_id,
+                url: result.secure_url
+            };
+
+            // Delete file immediately after upload
+            if (fs.existsSync(image3.path)) {
+                fs.unlinkSync(image3.path);
+            }
+        }
 
         // Upload driver photo if needed
         let driverProfile = {};
@@ -102,6 +141,7 @@ export const createService = async (req, res) => {
             }
         }
 
+
         const newService = await Service.create({
             serviceName,
             vendorName: vendor.businessName,
@@ -109,7 +149,9 @@ export const createService = async (req, res) => {
             location,
             description,
             availability,
-            images: uploadedServiceImages,
+            image1: image1 ? image1Result : undefined,
+            image2: image2 ? image2Result : undefined,
+            image3: image3 ? image3Result : undefined,
             servicetype,
             driver: servicetype === 'car rental' ? {
                 driverName,
@@ -203,8 +245,15 @@ export const updateService = async (req, res) => {
 
         const { serviceId, serviceName, location, description, availability, isavailable, price, driverName, driverDescription } = req.body;
 
-        const serviceImages = req.files?.images || [];
+        const image1 = req.files?.image1?.[0];
+        const image2 = req.files?.image2?.[0];
+        const image3 = req.files?.image3?.[0];
         const driverPhotoFile = req.files?.driverPhoto?.[0];
+
+        // Track all files for cleanup
+        if (image1) filesToCleanup.push(image1);
+        if (image2) filesToCleanup.push(image2);
+        if (image3) filesToCleanup.push(image3);
 
         if (!serviceId) {
             return res.status(400).json({
@@ -229,44 +278,99 @@ export const updateService = async (req, res) => {
         if (typeof isavailable === 'boolean') service.isavailable = isavailable;
 
         // Handle service images update
-        if (serviceImages.length > 0) {
-            if (serviceImages.length > 3) {
-                return res.status(400).json({
-                    message: "Maximum 3 service images allowed"
-                });
-            }
 
-            const uploadedServiceImages = [];
-            for (const image of serviceImages) {
-                try {
-                    const result = await cloudinary.uploader.upload(image.path, {
-                        folder: 'MerideHaven/serviceImages'
-                    });
-                    uploadedServiceImages.push({
-                        publicId: result.public_id,
-                        url: result.secure_url
-                    });
-                } finally {
-                    // Always delete the file
-                    if (fs.existsSync(image.path)) {
-                        fs.unlinkSync(image.path);
-                    }
-                }
-            }
-
-            // Delete old images from Cloudinary
-            if (service.images?.length > 0) {
-                for (const oldImage of service.images) {
-                    try {
-                        await cloudinary.uploader.destroy(oldImage.publicId);
-                    } catch (error) {
-                        console.error("Error deleting old image:", error);
-                    }
-                }
-            }
-
-            service.images = uploadedServiceImages;
+        if ([image1, image2, image3].length > 3) {
+            return res.status(400).json({
+                message: "Maximum 3 service images allowed"
+            });
         }
+
+        let image1Result = {};
+        if (image1) {
+            const result = await cloudinary.uploader.upload(image1.path, {
+                folder: 'Meride Haven/serviceImages'
+            });
+
+            image1Result = {
+                publicId: result.public_id,
+                url: result.secure_url
+            };
+
+            // Delete file immediately after upload
+            if (fs.existsSync(image1.path)) {
+                fs.unlinkSync(image1.path);
+            }
+
+            let oldImage1 = service.image1;
+            // Delete old image1 from Cloudinary
+            if (oldImage1?.publicId) {
+                try {
+                    await cloudinary.uploader.destroy(oldImage1.publicId);
+                } catch (error) {
+                    console.error("Error deleting old image1:", error);
+                }
+            }
+        }
+
+        service.image1 = image1Result;
+
+        let image2Result = {};
+        if (image2) {
+            const result = await cloudinary.uploader.upload(image2.path, {
+                folder: 'Meride Haven/serviceImages'
+            });
+
+            image2Result = {
+                publicId: result.public_id,
+                url: result.secure_url
+            };
+
+            // Delete file immediately after upload
+            if (fs.existsSync(image2.path)) {
+                fs.unlinkSync(image2.path);
+            }
+
+            let oldImage2 = service.image2;
+            // Delete old image2 from Cloudinary
+            if (oldImage2?.publicId) {
+                try {
+                    await cloudinary.uploader.destroy(oldImage2.publicId);
+                } catch (error) {
+                    console.error("Error deleting old image2:", error);
+                }
+            }
+        }
+
+        service.image2 = image2Result;
+
+        let image3Result = {};
+        if (image3) {
+            const result = await cloudinary.uploader.upload(image3.path, {
+                folder: 'Meride Haven/serviceImages'
+            });
+
+            image3Result = {
+                publicId: result.public_id,
+                url: result.secure_url
+            };
+
+            // Delete file immediately after upload
+            if (fs.existsSync(image3.path)) {
+                fs.unlinkSync(image3.path);
+            }
+
+            let oldImage3 = service.image3;
+            // Delete old image3 from Cloudinary
+            if (oldImage3?.publicId) {
+                try {
+                    await cloudinary.uploader.destroy(oldImage3.publicId);
+                } catch (error) {
+                    console.error("Error deleting old image3:", error);
+                }
+            }
+        }
+        service.image3 = image3Result;
+
 
         // Update driver details
         if (service.servicetype === 'car rental') {
