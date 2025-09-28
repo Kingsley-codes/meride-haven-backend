@@ -1,5 +1,6 @@
 import Service from "../models/serviceModel.js";
 import Vendor from "../models/vendorModel.js";
+import Driver from "../models/driverModel.js";
 
 
 
@@ -79,11 +80,20 @@ export const approveVendor = async (req, res) => {
         }
 
         const { vendorId } = req.body;
-        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
+        // Try to find vendor in Vendor or Driver collections
+        let vendor =
+            (await Vendor.findById(vendorId).select("-password -googleID")) ||
+            (await Driver.findById(vendorId).select("-password -googleID"));
+
         if (!vendor) {
-            return res.status(404).json({ success: false, message: "Vendor not found" });
+            return res.status(404).json({
+                success: false,
+                message: "Vendor not found",
+            });
         }
-        vendor.approvedStatus = 'approved';
+
+        // Approve vendor/driver
+        vendor.approvedStatus = "approved";
         await vendor.save();
         res.status(200).json({ success: true, message: "Vendor approved" });
     } catch (error) {
@@ -104,7 +114,10 @@ export const rejectVendor = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
+        let vendor =
+            (await Vendor.findById(vendorId).select("-password -googleID")) ||
+            (await Driver.findById(vendorId).select("-password -googleID"));
+
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -131,7 +144,10 @@ export const suspendVendor = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
+        let vendor =
+            (await Vendor.findById(vendorId).select("-password -googleID")) ||
+            (await Driver.findById(vendorId).select("-password -googleID"));
+
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -157,7 +173,10 @@ export const activateVendor = async (req, res) => {
             });
         }
 
-        const vendor = await Vendor.findById(vendorId).select('-password -googleID');
+        let vendor =
+            (await Vendor.findById(vendorId).select("-password -googleID")) ||
+            (await Driver.findById(vendorId).select("-password -googleID"));
+
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -197,7 +216,7 @@ export const fetchAllServices = async (req, res) => {
         }
 
         // Filter by servicetype
-        if (servicetype && ['security', 'hospitality', 'car rental', 'driving', 'events', 'cruise'].includes(servicetype)) {
+        if (servicetype && ['security', 'hospitality', 'car rental', 'events', 'cruise'].includes(servicetype)) {
             filter.servicetype = servicetype;
         }
 

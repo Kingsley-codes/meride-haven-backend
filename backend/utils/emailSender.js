@@ -1,21 +1,34 @@
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import axios from 'axios';
 
 
+// Brevo API configuration
+const BREVO_API_KEY = process.env.BREVO_API_KEY;
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 
 export const sendVendorVerificationEmail = async (email, code, isResend = false) => {
-
   const subject = isResend
     ? 'New Verification Code To Your Meride Haven Vendor Account'
     : "Verify To Your Meride Haven Vendor Account";
 
   try {
-    const { data, error } = await resend.emails.send({
-      from: "Meride Haven <noreply@meride-haven-backend.onrender.com>",
-      to: email,
-      subject,
-      html: `
+    // You'll need to verify your personal email in Brevo first
+    // Replace 'your-verified-email@gmail.com' with your actual verified email
+    const fromEmail = 'agbamkingsley@gmail.com'; // Change this!
+    const fromName = 'Meride Haven';
+
+    const emailData = {
+      sender: {
+        name: fromName,
+        email: fromEmail,
+      },
+      to: [
+        {
+          email: email,
+          // name: 'Recipient Name' // Optional
+        }
+      ],
+      subject: subject,
+      htmlContent: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -111,7 +124,7 @@ export const sendVendorVerificationEmail = async (email, code, isResend = false)
         </body>
         </html>
       `,
-      text: `
+      textContent: `
         ${isResend ? 'New Verification Code for Your Meride Haven Account' : 'Verify Your Meride Vendor Haven Account'}\n\n
         ${isResend ? 'Here is your new verification code:' : 'Thank you for creating a vendor account with Meride Haven.'}\n\n
         Your verification code is: ${code}\n\n
@@ -119,16 +132,20 @@ export const sendVendorVerificationEmail = async (email, code, isResend = false)
         Need help? Contact our support team at support@meridehaven.com\n\n
         © ${new Date().getFullYear()} Meride Haven. All rights reserved.
       `,
+    };
+
+    const response = await axios.post(BREVO_API_URL, emailData, {
+      headers: {
+        'api-key': BREVO_API_KEY,
+        'Content-Type': 'application/json',
+      },
     });
 
-    if (error) {
-      throw new Error(`Failed to send verification email: ${error.message}`);
-    }
+    return response.data;
 
-    return data;
   } catch (error) {
-    console.error("Resend error:", error);
-    throw new Error("Failed to send verification email");
+    console.error("Brevo error:", error.response?.data || error.message);
+    throw new Error(`Failed to send verification email: ${error.response?.data?.message || error.message}`);
   }
 };
 
