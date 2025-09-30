@@ -40,7 +40,7 @@ const serviceSchema = new mongoose.Schema({
     servicetype: {
         type: String,
         required: true,
-        enum: ['security', 'hospitality', 'car rental', 'driving', 'events', 'cruise']
+        enum: ['security', 'hospitality', 'car rental', 'events', 'cruise']
     },
     isavailable: {
         type: Boolean,

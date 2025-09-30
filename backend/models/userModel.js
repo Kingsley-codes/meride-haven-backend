@@ -44,6 +44,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    status: {
+      type: String,
+      enum: ["active", "suspended"],
+      default: "active",
+    },
+    bookings: {
+      type: Number,
+      default: 0,
+    }
   },
   { timestamps: true }
 );
