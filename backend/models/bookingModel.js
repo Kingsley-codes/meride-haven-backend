@@ -31,6 +31,13 @@ const bookingSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        serviceImages: [
+            {
+                image1: String,
+                image2: String,
+                image3: String
+            }
+        ],
         price: {
             type: Number,
             required: true
