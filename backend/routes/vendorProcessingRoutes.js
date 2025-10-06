@@ -1,6 +1,6 @@
 import express from "express";
 import { activateVendor, approveService, approveVendor, declineService, fetchAllServices, fetchAllVendors, rejectVendor, suspendVendor } from "../controllers/vendorprocessingController.js";
-import { adminAuthenticate } from "../middleware/authenticationMiddlewar.js";
+import { adminAuthenticate } from "../middleware/authenticationMiddleware.js";
 
 
 

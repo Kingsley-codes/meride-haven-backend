@@ -10,6 +10,7 @@ import configurePassport from './backend/config/passport.js';
 import adminAuthRouter from './backend/routes/adminAuthRoutes.js';
 import vendorProcessingRouter from './backend/routes/vendorProcessingRoutes.js';
 import vendorServiceRouter from './backend/routes/vendorServiceRoutes.js';
+import bookingRouter from './backend/routes/bookingRoutes.js';
 
 
 
@@ -51,6 +52,7 @@ app.get('/', (req, res) => {
 
 // Routes
 app.use('/api/users/auth', userRouter);
+app.use('/api/users/bookings', bookingRouter);
 app.use('/api/users/services', userServiceRouter);
 app.use('/api/vendors/auth', vendorAuthRouter);
 app.use('/api/vendors/services', vendorServiceRouter);

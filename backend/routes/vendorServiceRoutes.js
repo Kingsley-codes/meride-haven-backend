@@ -5,7 +5,7 @@ import {
     deleteService,
     updateService
 } from '../controllers/vendorServiceController.js';
-import { vendorAuthenticate } from '../middleware/authenticationMiddlewar.js';
+import { vendorAuthenticate } from '../middleware/authenticationMiddleware.js';
 import { uploadServiceImages } from '../middleware/uploadMiddleware.js';
 
 const vendorServiceRouter = express.Router();

@@ -2,9 +2,17 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
     {
-        user: {
+        client: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
+            required: true,
+        },
+        clientName: {
+            type: String,
+            required: true,
+        },
+        clientNumber: {
+            type: String,
             required: true,
         },
         service: {
@@ -14,10 +22,6 @@ const bookingSchema = new mongoose.Schema(
         vendor: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Vendor",
-        },
-        driver: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Driver",
         },
         serviceType: {
             type: String,
@@ -31,30 +35,56 @@ const bookingSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        serviceImages: [
-            {
-                image1: String,
-                image2: String,
-                image3: String
-            }
-        ],
+        paymentReference: {
+            type: String,
+            required: true,
+            unique: true,
+        },
+        transactionReference: {
+            type: String,
+            required: true,
+            unique: true,
+        },
         price: {
             type: Number,
             required: true
         },
+        status: {
+            type: String,
+            enum: ["in progress", "cancelled", "pending", "failed", "completed"],
+            default: "pending",
+        },
+
+        // for other services excluding events
+        duration: {
+            type: Number,
+        },
         startDate: {
             type: Date,
-            required: true,
         },
         endDate: {
             type: Date,
-            required: true,
         },
-        status: {
+
+        // for other services excluding events and hospitality
+        address: {
             type: String,
-            enum: ["in progress", "cancelled", "completed"],
-            default: "in progress",
         },
+        state: {
+            type: String,
+        },
+
+        // for hospitality service
+        securityDeposit: {
+            type: Number,
+        },
+
+        // for other services excluding events
+        time: {
+            type: String,
+            match: /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+        },
+
     },
     { timestamps: true }
 );

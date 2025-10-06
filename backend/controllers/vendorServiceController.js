@@ -145,7 +145,7 @@ export const createService = async (req, res) => {
         const newService = await Service.create({
             serviceName,
             vendorName: vendor.businessName,
-            vendorId: vendorID,
+            vendorID,
             location,
             description,
             availability,

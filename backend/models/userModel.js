@@ -34,10 +34,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      // Make password required only for non-Google signups
-      required: function () {
-        return !this.googleID; // Required if googleID is not present
-      },
       minlength: 8,
     },
     isVerified: {

@@ -1,19 +1,5 @@
 import mongoose from "mongoose";
-
-const driverSchema = new mongoose.Schema({
-    driverName: {
-        type: String,
-        required: true
-    },
-    driverDescription: {
-        type: String,
-        required: true
-    },
-    driverProfilePhoto: {
-        publicId: { type: String, required: true },
-        url: { type: String, required: true }
-    }
-});
+import { carRentalSchema, apartmentSchema, cruiseSchema, eventSchema, securitySchema } from "./allServiceSchema.js";
 
 const serviceSchema = new mongoose.Schema({
     serviceName: {
@@ -24,7 +10,7 @@ const serviceSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    vendorId: {
+    vendorID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Vendor',
         required: true
@@ -51,10 +37,34 @@ const serviceSchema = new mongoose.Schema({
         enum: ['daily', 'hourly', 'event-based'],
         required: true
     },
-    driver: {
-        type: driverSchema,
+    CarDetails: {
+        type: carRentalSchema,
         required: function () {
             return this.servicetype === 'car rental';
+        }
+    },
+    apartmentDetails: {
+        type: apartmentSchema,
+        required: function () {
+            return this.servicetype === 'hospitality';
+        }
+    },
+    cruiseDetails: {
+        type: cruiseSchema,
+        required: function () {
+            return this.servicetype === 'cruise';
+        }
+    },
+    eventDetails: {
+        type: eventSchema,
+        required: function () {
+            return this.servicetype === 'events';
+        }
+    },
+    securityDetails: {
+        type: securitySchema,
+        required: function () {
+            return this.servicetype === 'security';
         }
     },
     price: {
