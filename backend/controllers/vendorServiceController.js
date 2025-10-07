@@ -32,7 +32,7 @@ export const createService = async (req, res) => {
 
         const {
             serviceName, location, description,
-            servicetype, availability, price,
+            serviceType, availability, price,
             apartmentType, numOfRooms, numOfBathrooms,
             amenities, securityDeposit, rules,
             carModel, minBooking, carSeats,
@@ -54,11 +54,16 @@ export const createService = async (req, res) => {
         if (image3) filesToCleanup.push(image3);
         if (driverPhotoFile) filesToCleanup.push(driverPhotoFile);
 
-        if (!serviceName || !location || !description || !servicetype || !price || !availability) {
+        if (!serviceName || !location || !description || !serviceType || !price || !availability) {
 
             return res.status(400).json({
                 message: "All fields are required"
             });
+        }
+
+        if (serviceType === "hospitality" && (!apartmentType, numOfRooms, numOfBathrooms,
+            amenities, securityDeposit, rules)) {
+
         }
 
         // Validate service images (1-3)

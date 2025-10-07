@@ -23,12 +23,12 @@ const serviceSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    servicetype: {
+    serviceType: {
         type: String,
         required: true,
         enum: ['security', 'hospitality', 'car rental', 'events', 'cruise']
     },
-    isavailable: {
+    isAvailable: {
         type: Boolean,
         default: true
     },

@@ -10,10 +10,10 @@ export const getServices = async (req, res) => {
     const skip = (page - 1) * limit;
 
     // Base filter
-    let filter = { approvedStatus: "approved", isavailable: true };
+    let filter = { approvedStatus: "approved", isAvailable: true };
 
     // Filters
-    if (servicetype) filter.servicetype = servicetype;
+    if (servicetype) filter.serviceType = servicetype;
     if (location) filter.location = location;
 
     // Search
@@ -70,7 +70,7 @@ export const getServiceById = async (req, res) => {
 // Fetch services by service type only
 // export const getServicesByType = async (req, res) => {
 //   try {
-//     const { servicetype } = req.query; 
+//     const { servicetype } = req.query;
 
 //     if (!servicetype) {
 //       return res.status(400).json({

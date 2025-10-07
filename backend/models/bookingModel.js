@@ -67,7 +67,7 @@ const bookingSchema = new mongoose.Schema(
             type: Date,
         },
 
-        // for other services excluding events and hospitality
+        // for other services excluding events and hospitality and cruise
         address: {
             type: String,
         },
