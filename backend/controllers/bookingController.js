@@ -39,6 +39,13 @@ export const createBooking = async (req, res) => {
                     return res.status(400).json({ message: "Client details required" });
                 }
 
+                const existingUser = await User.findOne({ clientNumber });
+                if (existingUser) {
+                    return res.status(400).json({
+                        error: 'Phone number already exists'
+                    });
+                }
+
                 client = await User.create({
                     email: clientEmail,
                     fullName: clientName,
