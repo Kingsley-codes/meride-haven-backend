@@ -114,6 +114,7 @@ export const createBooking = async (req, res) => {
             serviceType,
             clientName: client.fullName,
             clientNumber: client.phone,
+            clientEmail: client.email,
             vendor: vendorID,
             price,
             paymentReference: paymentReference,
