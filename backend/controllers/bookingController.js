@@ -23,13 +23,10 @@ export const createBooking = async (req, res) => {
             serviceType, clientNumber, clientEmail
         } = req.body;
 
-        if (!clientEmail || !clientName || !clientNumber) {
-            return res.status(400).json({ message: "Client details required" });
-        }
-
         if (time && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
             return res.status(400).json({ message: "Invalid time format. Please use HH:MM." });
         }
+
 
         let client = {};
 
@@ -37,6 +34,11 @@ export const createBooking = async (req, res) => {
             client = await User.findOne({ email: clientEmail });
 
             if (!client) {
+
+                if (!clientEmail || !clientName || !clientNumber) {
+                    return res.status(400).json({ message: "Client details required" });
+                }
+
                 client = await User.create({
                     email: clientEmail,
                     fullName: clientName,
