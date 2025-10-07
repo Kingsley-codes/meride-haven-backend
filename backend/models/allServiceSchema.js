@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 export const apartmentSchema = new mongoose.Schema({
     apartmentType: {
@@ -20,17 +21,9 @@ export const apartmentSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    rule: {
+    rules: {
         type: [String],
-    },
-    contactManager: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
+    }
 });
 
 
@@ -39,11 +32,7 @@ export const carRentalSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    color: {
-        type: String,
-        required: true
-    },
-    seats: {
+    carSeats: {
         type: String,
         required: true
     },
@@ -58,10 +47,6 @@ export const carRentalSchema = new mongoose.Schema({
     driverProfilePhoto: {
         publicId: { type: String },
         url: { type: String }
-    },
-    availability: {
-        type: Boolean,
-        default: true
     },
     minBooking: {
         type: Number,
@@ -126,7 +111,7 @@ export const securitySchema = new mongoose.Schema({
         required: true
     },
     coverageArea: {
-        type: String,
+        type: [String],
         required: true
     },
     uniformType: {

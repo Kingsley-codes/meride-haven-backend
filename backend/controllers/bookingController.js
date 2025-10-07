@@ -72,7 +72,7 @@ export const createBooking = async (req, res) => {
                 serviceName: serviceName,
                 vendorID: vendorID,
             },
-            redirectUrl: `${process.env.FRONTEND_URL}/bookings/verifyPayment`
+            redirectUrl: `${process.env.FRONTEND_URL}/service-payment-verification`
             // redirectUrl: "http://localhost:3000/bookings/verifyPayment"
         };
 

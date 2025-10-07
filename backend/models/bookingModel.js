@@ -62,9 +62,6 @@ const bookingSchema = new mongoose.Schema(
         startDate: {
             type: Date,
         },
-        endDate: {
-            type: Date,
-        },
 
         // for other services excluding events and hospitality
         address: {

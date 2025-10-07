@@ -30,7 +30,18 @@ export const createService = async (req, res) => {
         }
 
 
-        const { serviceName, location, description, servicetype, availability, price, driverName, driverDescription } = req.body;
+        const {
+            serviceName, location, description,
+            servicetype, availability, price,
+            apartmentType, numOfRooms, numOfBathrooms,
+            amenities, securityDeposit, rules,
+            carModel, minBooking, carSeats,
+            driverName, driverDescription,
+            cruiseType, minDuration, capacity, dockingPoint,
+            venueType, cateringOptions,
+            personnelType, numOfPersonnel, coverageArea,
+            uniformType, armed
+        } = req.body;
 
         const driverPhotoFile = req.files?.driverPhoto?.[0];
         const image1 = req.files?.image1?.[0];
