@@ -60,7 +60,7 @@ export const cruiseSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    minDuration: {
+    minBooking: {
         type: String,
         required: true
     },

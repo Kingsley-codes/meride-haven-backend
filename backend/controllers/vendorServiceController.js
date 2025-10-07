@@ -37,7 +37,7 @@ export const createService = async (req, res) => {
             amenities, securityDeposit, rules,
             carModel, minBooking, carSeats,
             driverName, driverDescription,
-            cruiseType, minDuration, capacity, dockingPoint,
+            cruiseType, capacity, dockingPoint,
             venueType, cateringOptions,
             personnelType, numOfPersonnel, coverageArea,
             uniformType, armed
@@ -61,9 +61,39 @@ export const createService = async (req, res) => {
             });
         }
 
-        if (serviceType === "hospitality" && (!apartmentType, numOfRooms, numOfBathrooms,
-            amenities, securityDeposit, rules)) {
+        if (serviceType === "hospitality" && (!apartmentType || !numOfRooms || !numOfBathrooms ||
+            !amenities || !securityDeposit || !rules)) {
+            return res.status(400).json({
+                message: "Please fill the necessary fields required for hospitality"
+            });
+        }
 
+        if (serviceType === "car rental" && (!driverName || !driverDescription || !driverPhotoFile
+            || carModel || !minBooking || !carSeats)) {
+            return res.status(400).json({
+                message: "Please fill the necessary fields required for car rental"
+            });
+        }
+
+        if (serviceType === "events" && (!capacity || !venueType || !cateringOptions ||
+            !amenities || !rules)) {
+            return res.status(400).json({
+                message: "Please fill the necessary fields required for events"
+            });
+        }
+
+        if (serviceType === "cruise" && (!cruiseType || !minBooking || !capacity ||
+            !amenities || !dockingPoint)) {
+            return res.status(400).json({
+                message: "Please fill the necessary fields required for cruise"
+            });
+        }
+
+        if (serviceType === "security" && (!personnelType || !numOfPersonnel || !coverageArea ||
+            !uniformType || !armed)) {
+            return res.status(400).json({
+                message: "Please fill the necessary fields required for security"
+            });
         }
 
         // Validate service images (1-3)
@@ -77,15 +107,6 @@ export const createService = async (req, res) => {
                 message: "Maximum 3 service images allowed"
             });
         }
-
-        if (servicetype === 'car rental') {
-            if (!driverName || !driverDescription || !driverPhotoFile) {
-                return res.status(400).json({
-                    message: "All driver fields are required"
-                });
-            }
-        }
-
 
         // Upload service images
 
@@ -142,7 +163,7 @@ export const createService = async (req, res) => {
 
         // Upload driver photo if needed
         let driverProfile = {};
-        if (servicetype === 'car rental' && driverPhotoFile) {
+        if (serviceType === 'car rental' && driverPhotoFile) {
             const driverPhotoResult = await cloudinary.uploader.upload(driverPhotoFile.path, {
                 folder: 'Meride Haven/driverPhotos'
             });
@@ -168,13 +189,45 @@ export const createService = async (req, res) => {
             image1: image1 ? image1Result : undefined,
             image2: image2 ? image2Result : undefined,
             image3: image3 ? image3Result : undefined,
-            servicetype,
-            driver: servicetype === 'car rental' ? {
+            serviceType,
+            price,
+            CarDetails: serviceType === 'car rental' ? {
+                carModel,
+                carSeats,
+                minBooking,
                 driverName,
                 driverDescription,
                 driverProfilePhoto: driverProfile
             } : undefined,
-            price
+            apartmentDetails: serviceType === "hospitality" ? {
+                apartmentType,
+                numOfRooms,
+                numOfBathrooms,
+                amenities,
+                securityDeposit,
+                rules
+            } : undefined,
+            cruiseDetails: serviceType === "cruise" ? {
+                cruiseType,
+                minBooking,
+                amenities,
+                capacity,
+                dockingPoint
+            } : undefined,
+            eventDetails: serviceType === "event" ? {
+                capacity,
+                amenities,
+                venueType,
+                rules,
+                cateringOptions
+            } : undefined,
+            securityDetails: serviceType === "security" ? {
+                personnelType,
+                numOfPersonnel,
+                coverageArea,
+                uniformType,
+                armed
+            } : undefined
         });
 
 
