@@ -15,6 +15,10 @@ const bookingSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        clientEmail: {
+            type: String,
+            required: true,
+        },
         service: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Service",
