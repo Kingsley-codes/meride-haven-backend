@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import { CodeTypes, VendorVerificationCodes } from '../utils/verificationCodes.js';
-import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
+// import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
 import jwt from "jsonwebtoken";
 import validator from 'validator';
 import { v2 as cloudinary } from "cloudinary";

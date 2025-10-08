@@ -1,10 +1,10 @@
 import bcrypt from "bcrypt";
 import User from "../models/userModel.js";
 import { CodeTypes, UserVerificationCodes } from "../utils/verificationCodes.js";
-import {
-  sendUserPasswordResetEmail,
-  sendUserVerificationEmail,
-} from "../utils/emailSender.js";
+// import {
+//   sendUserPasswordResetEmail,
+//   sendUserVerificationEmail,
+// } from "../utils/emailSender.js";
 import jwt from "jsonwebtoken";
 import validator from "validator";
 import passport from "passport";

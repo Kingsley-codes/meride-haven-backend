@@ -1,6 +1,6 @@
 import passport from "passport";
 import Admin from "../models/adminModel.js";
-import { sendUserPasswordResetEmail } from "../utils/emailSender.js";
+// import { sendUserPasswordResetEmail } from "../utils/emailSender.js";
 import { UserVerificationCodes, CodeTypes } from "../utils/verificationCodes.js";
 import bcrypt from "bcrypt";
 import validator from "validator";

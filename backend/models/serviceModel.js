@@ -26,7 +26,7 @@ const serviceSchema = new mongoose.Schema({
     serviceType: {
         type: String,
         required: true,
-        enum: ['security', 'hospitality', 'car rental', 'events', 'cruise']
+        enum: ['security', 'apartment', 'car rental', 'event', 'cruise']
     },
     isAvailable: {
         type: Boolean,
@@ -46,7 +46,7 @@ const serviceSchema = new mongoose.Schema({
     apartmentDetails: {
         type: apartmentSchema,
         required: function () {
-            return this.serviceType === 'hospitality';
+            return this.serviceType === 'apartment';
         }
     },
     cruiseDetails: {
@@ -58,7 +58,7 @@ const serviceSchema = new mongoose.Schema({
     eventDetails: {
         type: eventSchema,
         required: function () {
-            return this.serviceType === 'events';
+            return this.serviceType === 'event';
         }
     },
     securityDetails: {
