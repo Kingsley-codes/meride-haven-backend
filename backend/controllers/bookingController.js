@@ -50,7 +50,6 @@ export const createBooking = async (req, res) => {
                     email: clientEmail,
                     fullName: clientName,
                     phone: clientNumber,
-                    isVerified: true,
                 });
             }
         } catch (userError) {
