@@ -24,7 +24,8 @@ const passport = configurePassport();
 app.use(cors({
     origin: [
         process.env.FRONTEND_URL,
-        process.env.FRONTEND_LOCALHOST
+        process.env.FRONTEND_LOCALHOST,
+        'https://www.meride-haven.com'
     ],
     credentials: true
 }));

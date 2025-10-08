@@ -40,31 +40,31 @@ const serviceSchema = new mongoose.Schema({
     CarDetails: {
         type: carRentalSchema,
         required: function () {
-            return this.servicetype === 'car rental';
+            return this.serviceType === 'car rental';
         }
     },
     apartmentDetails: {
         type: apartmentSchema,
         required: function () {
-            return this.servicetype === 'hospitality';
+            return this.serviceType === 'hospitality';
         }
     },
     cruiseDetails: {
         type: cruiseSchema,
         required: function () {
-            return this.servicetype === 'cruise';
+            return this.serviceType === 'cruise';
         }
     },
     eventDetails: {
         type: eventSchema,
         required: function () {
-            return this.servicetype === 'events';
+            return this.serviceType === 'events';
         }
     },
     securityDetails: {
         type: securitySchema,
         required: function () {
-            return this.servicetype === 'security';
+            return this.serviceType === 'security';
         }
     },
     price: {
