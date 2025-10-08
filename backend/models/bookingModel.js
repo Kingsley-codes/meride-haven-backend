@@ -30,7 +30,6 @@ const bookingSchema = new mongoose.Schema(
         serviceType: {
             type: String,
             required: true,
-            enum: ['security', 'hospitality', 'car rental', 'driving', 'events', 'cruise']
         },
         serviceName: {
             type: String,
