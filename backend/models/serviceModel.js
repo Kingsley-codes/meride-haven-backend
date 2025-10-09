@@ -34,7 +34,7 @@ const serviceSchema = new mongoose.Schema({
     },
     availability: {
         type: String,
-        enum: ['daily', 'hourly', 'event-based'],
+        enum: ['daily'],
         required: true
     },
     CarDetails: {

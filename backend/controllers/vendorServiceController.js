@@ -55,13 +55,12 @@ export const createService = async (req, res) => {
         if (driverPhotoFile) filesToCleanup.push(driverPhotoFile);
 
         if (!serviceName || !location || !description || !serviceType || !price || !availability) {
-
             return res.status(400).json({
                 message: "All fields are required"
             });
         }
 
-        if (serviceType === "hospitality" && (!apartmentType || !numOfRooms || !numOfBathrooms ||
+        if (serviceType === "apartment" && (!apartmentType || !numOfRooms || !numOfBathrooms ||
             !amenities || !securityDeposit || !rules)) {
             return res.status(400).json({
                 message: "Please fill the necessary fields required for hospitality"
@@ -69,7 +68,7 @@ export const createService = async (req, res) => {
         }
 
         if (serviceType === "car rental" && (!driverName || !driverDescription || !driverPhotoFile
-            || carModel || !minBooking || !carSeats)) {
+            || !carModel || !minBooking || !carSeats)) {
             return res.status(400).json({
                 message: "Please fill the necessary fields required for car rental"
             });
@@ -199,7 +198,7 @@ export const createService = async (req, res) => {
                 driverDescription,
                 driverProfilePhoto: driverProfile
             } : undefined,
-            apartmentDetails: serviceType === "hospitality" ? {
+            apartmentDetails: serviceType === "apartment" ? {
                 apartmentType,
                 numOfRooms,
                 numOfBathrooms,
