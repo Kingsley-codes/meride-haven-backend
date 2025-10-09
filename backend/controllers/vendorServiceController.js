@@ -261,7 +261,7 @@ export const getVendorServices = async (req, res) => {
                 message: "You are not authorized to view services for this vendor"
             });
         }
-        const services = await Service.find({ vendorId: vendorID });
+        const services = await Service.find({ vendorID: vendorID });
         res.status(200).json({ services });
     } catch (error) {
         res.status(500).json({
