@@ -311,7 +311,18 @@ export const updateService = async (req, res) => {
             });
         }
 
-        const { serviceId, serviceName, location, description, availability, isavailable, price, driverName, driverDescription } = req.body;
+        const {
+            serviceName, location, description,
+            serviceId, availability, price, isAvailable,
+            apartmentType, numOfRooms, numOfBathrooms,
+            amenities, securityDeposit, rules,
+            carModel, minBooking, carSeats,
+            driverName, driverDescription,
+            cruiseType, capacity, dockingPoint,
+            venueType, cateringOptions,
+            personnelType, numOfPersonnel, coverageArea,
+            uniformType, armed
+        } = req.body;
 
         const image1 = req.files?.image1?.[0];
         const image2 = req.files?.image2?.[0];
@@ -329,7 +340,7 @@ export const updateService = async (req, res) => {
             });
         }
 
-        const service = await Service.findOne({ _id: serviceId, vendorId: vendorID });
+        const service = await Service.findOne({ _id: serviceId, vendorID: vendorID });
 
         if (!service) {
             return res.status(404).json({
@@ -343,7 +354,7 @@ export const updateService = async (req, res) => {
         if (description) service.description = description;
         if (price) service.price = price;
         if (availability) service.availability = availability;
-        if (typeof isavailable === 'boolean') service.isavailable = isavailable;
+        if (typeof isAvailable === 'boolean') service.isAvailable = isAvailable;
 
         // Handle service images update
 
@@ -440,36 +451,132 @@ export const updateService = async (req, res) => {
         service.image3 = image3Result;
 
 
-        // Update driver details
-        if (service.servicetype === 'car rental') {
-            if (driverName) service.driver.driverName = driverName;
-            if (driverDescription) service.driver.driverDescription = driverDescription;
+        // Handle differnt service types
+        switch (service.serviceType) {
+            // Apartment edit
+            case 'apartment':
 
-            if (driverPhotoFile) {
-                try {
-                    const driverPhotoResult = await cloudinary.uploader.upload(driverPhotoFile.path, {
-                        folder: 'MerideHaven/driverPhotos'
-                    });
+                if (apartmentType) {
+                    service.apartmentDetails.apartmentType = apartmentType
+                }
+                if (numOfRooms) {
+                    service.apartmentDetails.numOfRooms = numOfRooms
+                }
+                if (numOfBathrooms) {
+                    service.apartmentDetails.numOfBathrooms = numOfBathrooms
+                }
+                if (amenities) {
+                    service.apartmentDetails.amenities = amenities
+                }
+                if (securityDeposit) {
+                    service.apartmentDetails.securityDeposit = securityDeposit
+                }
+                if (rules) {
+                    service.apartmentDetails.rules = rules
+                }
+                break;
 
-                    // Delete old driver photo
-                    if (service.driver.driverProfilePhoto?.publicId) {
-                        try {
-                            await cloudinary.uploader.destroy(service.driver.driverProfilePhoto.publicId);
-                        } catch (error) {
-                            console.error("Error deleting old driver photo:", error);
+            // Update car details
+            case 'car rental':
+
+                if (driverName) service.CarDetails.driverName = driverName;
+                if (carModel) service.CarDetails.carModel = carModel;
+                if (carSeats) service.CarDetails.carSeats = carSeats;
+                if (minBooking) service.CarDetails.minBooking = minBooking;
+                if (driverDescription) service.CarDetails.driverDescription = driverDescription;
+
+                if (driverPhotoFile) {
+                    try {
+                        const driverPhotoResult = await cloudinary.uploader.upload(driverPhotoFile.path, {
+                            folder: 'MerideHaven/driverPhotos'
+                        });
+
+                        // Delete old driver photo
+                        if (service.CarDetails.driverProfilePhoto?.publicId) {
+                            try {
+                                await cloudinary.uploader.destroy(service.CarDetails.driverProfilePhoto.publicId);
+                            } catch (error) {
+                                console.error("Error deleting old driver photo:", error);
+                            }
+                        }
+
+                        service.CarDetails.driverProfilePhoto = {
+                            publicId: driverPhotoResult.public_id,
+                            url: driverPhotoResult.secure_url
+                        };
+                    } finally {
+                        if (fs.existsSync(driverPhotoFile.path)) {
+                            fs.unlinkSync(driverPhotoFile.path);
                         }
                     }
-
-                    service.driver.driverProfilePhoto = {
-                        publicId: driverPhotoResult.public_id,
-                        url: driverPhotoResult.secure_url
-                    };
-                } finally {
-                    if (fs.existsSync(driverPhotoFile.path)) {
-                        fs.unlinkSync(driverPhotoFile.path);
-                    }
                 }
-            }
+                break;
+
+            // Update security details
+            case 'security':
+
+                if (personnelType) {
+                    service.securityDetails.personnelType = personnelType
+                }
+                if (numOfPersonnel) {
+                    service.securityDetails.numOfPersonnel = numOfPersonnel
+                }
+                if (coverageArea) {
+                    service.securityDetails.coverageArea = coverageArea
+                }
+                if (uniformType) {
+                    service.securityDetails.uniformType = uniformType
+                }
+                if (securityDeposit) {
+                    service.securityDetails.securityDeposit = armed
+                }
+
+                break;
+
+            // Update car details
+            case 'cruise':
+
+                if (cruiseType) {
+                    service.cruiseDetails.cruiseType = cruiseType
+                }
+                if (minBooking) {
+                    service.cruiseDetails.minBooking = minBooking
+                }
+                if (amenities) {
+                    service.cruiseDetails.amenities = amenities
+                }
+                if (capacity) {
+                    service.cruiseDetails.capacity = capacity
+                }
+                if (dockingPoint) {
+                    service.cruiseDetails.dockingPoint = dockingPoint
+                }
+
+                break;
+
+            // Update car details
+            case 'event':
+
+                if (capacity) {
+                    service.eventSchema.capacity = capacity
+                }
+                if (amenitiesvenueType) {
+                    service.eventSchema.amenitiesvenueType = amenitiesvenueType
+                }
+                if (venueType) {
+                    service.eventSchema.venueType = venueType
+                }
+                if (rules) {
+                    service.eventSchema.rules = rules
+                }
+                if (cateringOptions) {
+                    service.eventSchema.cateringOptions = cateringOptions
+                }
+
+                break;
+
+            default:
+                console.log(`Unhandled service type: ${serviceType}`);
         }
 
         await service.save();
