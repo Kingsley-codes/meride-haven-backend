@@ -216,8 +216,8 @@ export const fetchAllServices = async (req, res) => {
         }
 
         // Filter by servicetype
-        if (servicetype && ['security', 'hospitality', 'car rental', 'events', 'cruise'].includes(servicetype)) {
-            filter.servicetype = servicetype;
+        if (servicetype && ['security', 'apartment', 'car rental', 'event', 'cruise'].includes(servicetype)) {
+            filter.serviceType = servicetype;
         }
 
         // Filter by date range

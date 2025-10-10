@@ -11,6 +11,7 @@ import adminAuthRouter from './backend/routes/adminAuthRoutes.js';
 import vendorProcessingRouter from './backend/routes/vendorProcessingRoutes.js';
 import vendorServiceRouter from './backend/routes/vendorServiceRoutes.js';
 import bookingRouter from './backend/routes/bookingRoutes.js';
+import adminDashboardRouter from './backend/routes/adminDashboardRoutes.js';
 
 
 
@@ -58,6 +59,7 @@ app.use('/api/users/services', userServiceRouter);
 app.use('/api/vendors/auth', vendorAuthRouter);
 app.use('/api/vendors/services', vendorServiceRouter);
 app.use('/api/admin/auth', adminAuthRouter);
+app.use('/api/admin/dashboard', adminDashboardRouter);
 app.use('/api/admin/vendors', vendorProcessingRouter);
 
 

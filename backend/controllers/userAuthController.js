@@ -103,8 +103,9 @@ export const registerUser = async (req, res) => {
       ) {
         existingUser.fullName = fullName;
         existingUser.phone = phone;
-        existingUser.password = hashedPassword;
       }
+      existingUser.password = hashedPassword;
+      existingUser.isVerified = true
 
       await existingUser.save();
     } else {

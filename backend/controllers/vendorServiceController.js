@@ -311,6 +311,8 @@ export const updateService = async (req, res) => {
             });
         }
 
+        const filesToCleanup = [];
+
         const {
             serviceName, location, description,
             serviceId, availability, price, isAvailable,
@@ -321,7 +323,8 @@ export const updateService = async (req, res) => {
             cruiseType, capacity, dockingPoint,
             venueType, cateringOptions,
             personnelType, numOfPersonnel, coverageArea,
-            uniformType, armed
+            uniformType, armed, remove_image1,
+            remove_image2, remove_image3
         } = req.body;
 
         const image1 = req.files?.image1?.[0];
@@ -356,100 +359,58 @@ export const updateService = async (req, res) => {
         if (availability) service.availability = availability;
         if (typeof isAvailable === 'boolean') service.isAvailable = isAvailable;
 
-        // Handle service images update
+        // ----------------- IMAGE UPDATE HANDLING -----------------
 
-        if ([image1, image2, image3].length > 3) {
-            return res.status(400).json({
-                message: "Maximum 3 service images allowed"
-            });
-        }
+        // Collect image files from req.files
+        const imageFiles = { image1, image2, image3 };
 
-        let image1Result = {};
-        if (image1) {
-            const result = await cloudinary.uploader.upload(image1.path, {
-                folder: 'Meride Haven/serviceImages'
-            });
+        // Loop through each possible image key
+        for (const key of ["image1", "image2", "image3"]) {
+            const newImage = imageFiles[key];
+            const removeFlag = req.body[`remove_${key}`]; // e.g. remove_image1=true in form-data
 
-            image1Result = {
-                publicId: result.public_id,
-                url: result.secure_url
-            };
-
-            // Delete file immediately after upload
-            if (fs.existsSync(image1.path)) {
-                fs.unlinkSync(image1.path);
+            // CASE 1: Remove specific image
+            if (removeFlag === "true" && service[key]?.publicId) {
+                try {
+                    await cloudinary.uploader.destroy(service[key].publicId);
+                    service[key] = {}; // Clear it from DB
+                } catch (err) {
+                    console.error(`Error removing ${key}:`, err);
+                }
+                continue; // Skip to next image
             }
 
-            let oldImage1 = service.image1;
-            // Delete old image1 from Cloudinary
-            if (oldImage1?.publicId) {
+            // CASE 2: Replace specific image
+            if (newImage) {
                 try {
-                    await cloudinary.uploader.destroy(oldImage1.publicId);
-                } catch (error) {
-                    console.error("Error deleting old image1:", error);
+                    const uploadResult = await cloudinary.uploader.upload(newImage.path, {
+                        folder: "MerideHaven/serviceImages",
+                    });
+
+                    // Delete local temp file
+                    if (fs.existsSync(newImage.path)) {
+                        fs.unlinkSync(newImage.path);
+                    }
+
+                    // Delete old Cloudinary image if it exists
+                    if (service[key]?.publicId) {
+                        try {
+                            await cloudinary.uploader.destroy(service[key].publicId);
+                        } catch (err) {
+                            console.error(`Error deleting old ${key}:`, err);
+                        }
+                    }
+
+                    // Update DB with new Cloudinary image info
+                    service[key] = {
+                        publicId: uploadResult.public_id,
+                        url: uploadResult.secure_url,
+                    };
+                } catch (err) {
+                    console.error(`Error uploading ${key}:`, err);
                 }
             }
         }
-
-        service.image1 = image1Result;
-
-        let image2Result = {};
-        if (image2) {
-            const result = await cloudinary.uploader.upload(image2.path, {
-                folder: 'Meride Haven/serviceImages'
-            });
-
-            image2Result = {
-                publicId: result.public_id,
-                url: result.secure_url
-            };
-
-            // Delete file immediately after upload
-            if (fs.existsSync(image2.path)) {
-                fs.unlinkSync(image2.path);
-            }
-
-            let oldImage2 = service.image2;
-            // Delete old image2 from Cloudinary
-            if (oldImage2?.publicId) {
-                try {
-                    await cloudinary.uploader.destroy(oldImage2.publicId);
-                } catch (error) {
-                    console.error("Error deleting old image2:", error);
-                }
-            }
-        }
-
-        service.image2 = image2Result;
-
-        let image3Result = {};
-        if (image3) {
-            const result = await cloudinary.uploader.upload(image3.path, {
-                folder: 'Meride Haven/serviceImages'
-            });
-
-            image3Result = {
-                publicId: result.public_id,
-                url: result.secure_url
-            };
-
-            // Delete file immediately after upload
-            if (fs.existsSync(image3.path)) {
-                fs.unlinkSync(image3.path);
-            }
-
-            let oldImage3 = service.image3;
-            // Delete old image3 from Cloudinary
-            if (oldImage3?.publicId) {
-                try {
-                    await cloudinary.uploader.destroy(oldImage3.publicId);
-                } catch (error) {
-                    console.error("Error deleting old image3:", error);
-                }
-            }
-        }
-        service.image3 = image3Result;
-
 
         // Handle differnt service types
         switch (service.serviceType) {
