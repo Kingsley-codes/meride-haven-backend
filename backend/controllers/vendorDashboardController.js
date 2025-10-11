@@ -1,77 +1,49 @@
 import Booking from "../models/bookingModel.js";
 
-
-// export const getUserActiveBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const activeBookings = await Booking.find({ user: userId, status: "in progress" });
-//         res.status(200).json(activeBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching active bookings", error });
-//     }
-// };
-
-// export const getUserCompletedBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const completedBookings = await Booking.find({ user: userId, status: "completed" });
-//         res.status(200).json(completedBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching completed bookings", error });
-//     }
-// };
-
-// export const getUserCancelledBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const cancelledBookings = await Booking.find({ user: userId, status: "cancelled" });
-//         res.status(200).json(cancelledBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching cancelled bookings", error });
-//     }
-// };
-
-// export const getUserConfirmedBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const cancelledBookings = await Booking.find({ user: userId, status: "future" });
-//         res.status(200).json(cancelledBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching future bookings", error });
-//     }
-// };
-
-
 export const fetchAllBookings = async (req, res) => {
     try {
-        const user = req.user;
-        if (!user) {
+        const vendor = req.vendor;
+        if (!vendor) {
             return res.status(403).json({
                 success: false,
                 message: "You are Unauthorized",
             });
         }
 
-        const { status } = req.query;
+        const { status, servicetype, q, startDate, endDate } = req.query;
 
-        // Base filter 
+        // Base filter (no vendor yet)
         const filter = {};
 
-        if (status && ["in progress", "cancelled", "confirmed", "completed"].includes(status)) {
+        if (status && ["in progress", "cancelled", "confirmed", "pending", "failed", "completed"].includes(status)) {
             filter.status = status;
         }
 
+        if (servicetype && ["security", "apartment", "car rental", "event", "cruise"].includes(servicetype)) {
+            filter.serviceType = servicetype;
+        }
+
+        if (q) {
+            filter.$or = [
+                { clientNumber: { $regex: q, $options: "i" } },
+            ];
+        }
+
+        if (startDate || endDate) {
+            filter.createdAt = {};
+            if (startDate) filter.createdAt.$gte = new Date(startDate);
+            if (endDate) filter.createdAt.$lte = new Date(endDate);
+        }
 
         const bookings = await Booking.find({
             ...filter,
-            client: user,
+            vendor: vendor,
         }).sort({ createdAt: -1 });
 
         return res.status(200).json({
             success: true,
             message: "Bookings fetched successfully",
             bookings,
-            totalFiltered: bookings.length
         });
     } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -84,10 +56,61 @@ export const fetchAllBookings = async (req, res) => {
 };
 
 
-export const cancelBooking = async (req, res) => {
+
+export const acceptBooking = async (req, res) => {
     try {
-        const user = req.user;
-        if (!user) {
+        const vendor = req.vendor;
+        if (!vendor) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { bookingID } = req.body;
+
+        if (!bookingID) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID required",
+            });
+        }
+
+        // Find and update the booking in one go
+        const booking = await Booking.findOneAndUpdate(
+            { bookingID, vendor: vendor, status: { $ne: "in progress" } },
+            { status: "in progress" },
+            { new: true } // returns the updated document
+        );
+
+        // If not found or already accepted
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found or already accepted",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking accepted successfully",
+            booking,
+        });
+    } catch (error) {
+        console.error("Error accepting booking:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while accepting the booking",
+            error: error.message,
+        });
+    }
+};
+
+
+export const rejectBooking = async (req, res) => {
+    try {
+        const vendor = req.vendor;
+        if (!vendor) {
             return res.status(403).json({
                 success: false,
                 message: "You are Unauthorized",
@@ -104,7 +127,72 @@ export const cancelBooking = async (req, res) => {
         }
 
         // Find the booking first to check its current status
-        const existingBooking = await Booking.findOne({ bookingID, client: user });
+        const existingBooking = await Booking.findOne({ bookingID, vendor: vendor });
+
+        if (!existingBooking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        // Check if booking is already in progress or cancelled
+        if (existingBooking.status === "in progress") {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot reject booking that is already in progress",
+            });
+        }
+
+        if (existingBooking.status === "cancelled") {
+            return res.status(400).json({
+                success: false,
+                message: "Booking is already cancelled",
+            });
+        }
+
+        // Update the booking to cancelled
+        existingBooking.status = "cancelled";
+
+        await existingBooking.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking rejected successfully",
+            booking: updatedBooking,
+        });
+    } catch (error) {
+        console.error("Error rejecting booking:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while rejecting the booking",
+            error: error.message,
+        });
+    }
+};
+
+
+export const cancelBooking = async (req, res) => {
+    try {
+        const vendor = req.vendor;
+        if (!vendor) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { bookingID } = req.body;
+
+        if (!bookingID) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID required",
+            });
+        }
+
+        // Find the booking first to check its current status
+        const existingBooking = await Booking.findOne({ bookingID, vendor: vendor });
 
         if (!existingBooking) {
             return res.status(404).json({
@@ -118,13 +206,6 @@ export const cancelBooking = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: "Booking is already cancelled",
-            });
-        }
-
-        if (existingBooking.status === "completed") {
-            return res.status(400).json({
-                success: false,
-                message: "You cannot cancel a completed booking",
             });
         }
 
@@ -147,69 +228,3 @@ export const cancelBooking = async (req, res) => {
         });
     }
 };
-
-
-export const completeBooking = async (req, res) => {
-    try {
-        const user = req.user;
-        if (!user) {
-            return res.status(403).json({
-                success: false,
-                message: "You are Unauthorized",
-            });
-        }
-
-        const { bookingID } = req.body;
-
-        if (!bookingID) {
-            return res.status(400).json({
-                success: false,
-                message: "Booking ID required",
-            });
-        }
-
-        // Find the booking first to check its current status
-        const existingBooking = await Booking.findOne({ bookingID, client: user });
-
-        if (!existingBooking) {
-            return res.status(404).json({
-                success: false,
-                message: "Booking not found",
-            });
-        }
-
-
-        if (existingBooking.status !== "in progress") {
-            return res.status(400).json({
-                success: false,
-                message: "You can only complete a service that's in progress",
-            });
-        }
-
-        if (existingBooking.status === "completed") {
-            return res.status(400).json({
-                success: false,
-                message: "Booking is already completed",
-            });
-        }
-
-        // Update the booking to cancelled
-        existingBooking.status = "completed";
-
-        await existingBooking.save();
-
-        return res.status(200).json({
-            success: true,
-            message: "Booking rejected successfully",
-            booking: existingBooking,
-        });
-    } catch (error) {
-        console.error("Error rejecting booking:", error);
-        return res.status(500).json({
-            success: false,
-            message: "An error occurred while rejecting the booking",
-            error: error.message,
-        });
-    }
-};
-

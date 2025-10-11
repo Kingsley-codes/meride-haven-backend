@@ -11,17 +11,23 @@ export const fetchAllBookings = async (req, res) => {
             });
         }
 
-        const { status, PaymentStatus, startDate, endDate } = req.query;
+        const { q, status, paymentStatus, startDate, endDate } = req.query;
 
         // FILTERS
         const filter = {};
 
-        if (PaymentStatus && ["pending", "failed", "completed", "refunded"].includes(PaymentStatus)) {
-            filter.PaymentStatus = PaymentStatus;
+        if (paymentStatus && ["pending", "failed", "completed", "refunded"].includes(paymentStatus)) {
+            filter.paymentStatus = paymentStatus;
         }
 
-        if (status && ["in progress", "cancelled", "pending", "failed", "completed"].includes(status)) {
+        if (status && ["in progress", "cancelled", "confirmed", "pending", "failed", "completed"].includes(status)) {
             filter.status = status;
+        }
+
+        if (q) {
+            filter.$or = [
+                { bookingID: { $regex: q, $options: "i" } },
+            ];
         }
 
         if (startDate || endDate) {
@@ -53,6 +59,7 @@ export const fetchAllBookings = async (req, res) => {
             totalCurrent,
             cancelledCurrent,
             completedCurrent,
+            confirmedCurrent,
             inProgressCurrent,
             pendingCurrent,
         ] = await Promise.all([
@@ -65,6 +72,10 @@ export const fetchAllBookings = async (req, res) => {
             }),
             Booking.countDocuments({
                 status: "completed",
+                createdAt: { $gte: currentMonthStart, $lt: nextMonthStart },
+            }),
+            Booking.countDocuments({
+                status: "confirmed",
                 createdAt: { $gte: currentMonthStart, $lt: nextMonthStart },
             }),
             Booking.countDocuments({
@@ -82,6 +93,7 @@ export const fetchAllBookings = async (req, res) => {
             totalLast,
             cancelledLast,
             completedLast,
+            confirmedLast,
             inProgressLast,
             pendingLast,
         ] = await Promise.all([
@@ -94,6 +106,10 @@ export const fetchAllBookings = async (req, res) => {
             }),
             Booking.countDocuments({
                 status: "completed",
+                createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
+            }),
+            Booking.countDocuments({
+                status: "confirmed",
                 createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
             }),
             Booking.countDocuments({
@@ -124,6 +140,10 @@ export const fetchAllBookings = async (req, res) => {
             completed: {
                 count: completedCurrent,
                 change: percentChange(completedCurrent, completedLast),
+            },
+            confirmed: {
+                count: confirmedCurrent,
+                change: percentChange(confirmedCurrent, confirmedLast),
             },
             inProgress: {
                 count: inProgressCurrent,

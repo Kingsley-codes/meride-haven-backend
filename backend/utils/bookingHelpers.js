@@ -15,8 +15,8 @@ export const handleSuccessfulPayment = async (eventData) => {
         }
 
         // If payment is successful, update booking status
-        booking.status = "in progress";
-        booking.PaymentStatus = "completed"
+        booking.status = "confirmed";
+        booking.paymentStatus = "completed"
         await booking.save();
 
         return booking;
@@ -41,7 +41,7 @@ export const handleFailedPayment = async (eventData) => {
 
         // If payment failed, update booking status
         booking.status = "failed";
-        booking.PaymentStatus = "failed";
+        booking.paymentStatus = "failed";
         await booking.save();
 
         return booking;
