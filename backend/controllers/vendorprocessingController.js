@@ -59,14 +59,105 @@ export const fetchAllVendors = async (req, res) => {
             });
         }
 
+        const { q, status } = req.query;
+
+        // FILTERS
+        const filter = {};
+
+        if (status && ["active", "suspended"].includes(status)) {
+            filter.status = status;
+        }
+
+        if (q) {
+            filter.$or = [
+                { email: { $regex: q, $options: "i" } },
+                { businessName: { $regex: q, $options: "i" } }
+            ];
+        }
+
+        // --- 1. Overview Stats ---
+
+        // Define current and previous month date ranges
+        const now = new Date();
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+        // Current month counts
+        const totalClients = await Vendor.countDocuments();
+        const activeClients = await Vendor.countDocuments({ status: "active" });
+        const suspendedClients = await Vendor.countDocuments({ status: "suspended" });
+
+        // Last month counts
+        const lastMonthTotal = await Vendor.countDocuments({
+            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        });
+
+        const lastMonthActive = await Vendor.countDocuments({
+            status: "active",
+            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        });
+
+        const lastMonthSuspended = await Vendor.countDocuments({
+            status: "suspended",
+            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        });
+
+        // Helper function for percentage change
+        const getPercentageChange = (current, previous) => {
+            if (previous === 0 && current === 0) return 0;
+            if (previous === 0) return 100; // means growth from nothing
+            return (((current - previous) / previous) * 100).toFixed(1);
+        };
+
+        // Month-to-month changes
+        const totalChange = getPercentageChange(totalClients, lastMonthTotal);
+        const activeChange = getPercentageChange(activeClients, lastMonthActive);
+        const suspendedChange = getPercentageChange(
+            suspendedClients,
+            lastMonthSuspended
+        );
+
+        const totalFiltered = await Vendor.countDocuments(filter);
+
+        // --- Pagination ---
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
         const allVendors = await Vendor.find({
+            ...filter,
             kycuploaded: true,
-        }).select('-password -googleID');
-        res.status(200).json({ success: true, data: allVendors });
+        }).select('-password -googleID')
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        res.status(200).json({
+            success: true,
+            overview: {
+                totalClients,
+                activeClients,
+                suspendedClients,
+                changes: {
+                    totalChange: `${totalChange}%`,
+                    activeChange: `${activeChange}%`,
+                    suspendedChange: `${suspendedChange}%`,
+                },
+            },
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalFiltered / limit),
+                perPage: limit,
+            },
+            data: allVendors
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error" });
+        console.error("Error fetching vendors:", error);
+        res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
 };
+
 
 export const approveVendor = async (req, res) => {
     try {

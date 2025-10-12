@@ -8,7 +8,7 @@ const vendorProcessingRouter = express.Router();
 
 // Vendor processing routes
 
-vendorProcessingRouter.get("/pending", adminAuthenticate, fetchAllVendors);
+vendorProcessingRouter.get("/", adminAuthenticate, fetchAllVendors);
 vendorProcessingRouter.post("/approve", adminAuthenticate, approveVendor);
 vendorProcessingRouter.post("/reject", adminAuthenticate, rejectVendor);
 vendorProcessingRouter.post("/suspend", adminAuthenticate, suspendVendor);

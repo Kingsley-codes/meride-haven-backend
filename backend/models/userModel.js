@@ -55,6 +55,9 @@ const userSchema = new mongoose.Schema(
     },
     lastBooking: {
       type: Date
+    },
+    address: {
+      type: String
     }
   },
   { timestamps: true }
