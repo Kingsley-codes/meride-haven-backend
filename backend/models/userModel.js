@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    profilePhoto: {
+      publicId: { type: String },
+      url: { type: String }
+    },
     status: {
       type: String,
       enum: ["active", "suspended"],
@@ -48,6 +52,9 @@ const userSchema = new mongoose.Schema(
     bookings: {
       type: Number,
       default: 0,
+    },
+    lastBooking: {
+      type: Date
     }
   },
   { timestamps: true }

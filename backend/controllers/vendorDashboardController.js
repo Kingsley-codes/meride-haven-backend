@@ -1,4 +1,5 @@
 import Booking from "../models/bookingModel.js";
+import User from "../models/userModel.js";
 
 export const fetchAllBookings = async (req, res) => {
     try {
@@ -90,6 +91,17 @@ export const acceptBooking = async (req, res) => {
                 message: "Booking not found or already accepted",
             });
         }
+
+        const client = await User.findOne({ phone: booking.clientNumber });
+
+        if (!client) {
+            console.log("User not found for: ", booking.clientNumber);
+            throw new Error("User not found");
+        }
+
+        client.booking += 1;
+        client.lastBooking = new Date();
+        await client.save();
 
         return res.status(200).json({
             success: true,

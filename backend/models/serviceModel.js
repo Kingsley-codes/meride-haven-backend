@@ -32,6 +32,10 @@ const serviceSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    rating: {
+        type: Number,
+        default: 0
+    },
     availability: {
         type: String,
         enum: ['daily'],

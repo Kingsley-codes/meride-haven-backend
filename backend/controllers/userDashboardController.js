@@ -1,4 +1,7 @@
 import Booking from "../models/bookingModel.js";
+import Service from "../models/serviceModel.js";
+import Vendor from "../models/vendorModel.js";
+
 
 
 // export const getUserActiveBookings = async (req, res) => {
@@ -213,3 +216,113 @@ export const completeBooking = async (req, res) => {
     }
 };
 
+
+
+export const bookingRatingController = async (req, res) => {
+    try {
+        const { rating, reviewDescription, bookingID } = req.body;
+
+        const user = req.user;
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        if (!bookingID) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking ID required",
+            });
+        }
+
+        // Validate input
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({
+                success: false,
+                message: "Rating must be a number between 1 and 5",
+            });
+        }
+
+        // Find the booking
+        const booking = await Booking.findOne({
+            bookingID: bookingID,
+            client: user
+        });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        if (booking.rating) {
+            return res.status(404).json({
+                success: false,
+                message: "You already rated this booking",
+            });
+        }
+
+        if (booking.status !== "completed") {
+            return res.status(400).json({
+                success: false,
+                message: "You can only rate a completed booking",
+            });
+        }
+
+        // Save rating and review on the booking
+        booking.rating = rating;
+        booking.reviewDescription = reviewDescription;
+        await booking.save();
+
+        const serviceId = booking.service;
+        const vendorId = booking.vendor;
+
+        // Calculate new average rating for the service
+        const serviceBookings = await Booking.find({
+            service: serviceId,
+            rating: { $exists: true },
+        });
+
+        const serviceAverage =
+            serviceBookings.reduce((acc, b) => acc + b.rating, 0) /
+            serviceBookings.length;
+
+        await Service.findByIdAndUpdate(serviceId, {
+            rating: serviceAverage.toFixed(1),
+        });
+
+        // Calculate vendor average rating (based on all their bookings)
+        const vendorBookings = await Booking.find({
+            vendor: vendorId,
+            rating: { $exists: true },
+        });
+
+        const vendorAverage =
+            vendorBookings.reduce((acc, b) => acc + b.rating, 0) /
+            vendorBookings.length;
+
+        await Vendor.findByIdAndUpdate(vendorId, {
+            rating: vendorAverage.toFixed(1),
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Rating and review saved successfully",
+            data: {
+                booking,
+                serviceRating: serviceAverage.toFixed(1),
+                vendorRating: vendorAverage.toFixed(1),
+            },
+        });
+    } catch (error) {
+        console.error("Error in bookingRatingController:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Something went wrong",
+            error: error.message,
+        });
+    }
+};

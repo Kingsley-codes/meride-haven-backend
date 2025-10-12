@@ -33,6 +33,13 @@ export const createBooking = async (req, res) => {
         try {
             client = await User.findOne({ email: clientEmail });
 
+            if (client.status === "suspended") {
+                return res.status(400).json({
+                    message: "Client is currently suspended"
+                });
+
+            }
+
             if (!client) {
 
                 if (!clientEmail || !clientName || !clientNumber) {
@@ -222,7 +229,7 @@ export const verifyPayment = async (req, res) => {
 
         // If successful → mark in progress
         if (paymentStatus === "successful") {
-            if (booking.status === "in progress") {
+            if (booking.status === "confirmed") {
                 return res.status(200).json({
                     success: true,
                     message: "Payment already verified and booking is active",
@@ -230,7 +237,7 @@ export const verifyPayment = async (req, res) => {
                 });
             }
 
-            booking.status = "in progress";
+            booking.status = "confirmed";
             await booking.save();
 
             return res.status(200).json({

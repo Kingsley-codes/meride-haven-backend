@@ -62,6 +62,13 @@ const bookingSchema = new mongoose.Schema(
             enum: ["pending", "failed", "completed", "refunded"],
             default: "pending",
         },
+        rating: {
+            type: Number,
+            default: 0
+        },
+        reviewDescription: {
+            type: String,
+        },
 
         // for other services excluding events
         duration: {

@@ -1,4 +1,5 @@
 import Booking from "../models/bookingModel.js";
+import User from "../models/userModel.js";
 
 
 //  Handle successful payment and activate booking
@@ -8,6 +9,10 @@ export const handleSuccessfulPayment = async (eventData) => {
         if (!eventData) {
             throw new Error("Event data is required");
         }
+
+        const metadata = typeof eventData.metadata === "string"
+            ? JSON.parse(eventData.metadata)
+            : eventData.metadata;
 
         const booking = await Booking.findOne({ paymentReference: eventData.payment_reference });
         if (!booking) {
