@@ -1,5 +1,6 @@
 import Booking from "../models/bookingModel.js";
 import User from "../models/userModel.js";
+import Vendor from "../models/vendorModel.js";
 
 export const fetchAllBookings = async (req, res) => {
     try {
@@ -243,132 +244,58 @@ export const cancelBooking = async (req, res) => {
 
 
 
-
-export const editProfile = async (req, res) => {
+export const fetchReviews = async (req, res) => {
     try {
-        const { firstName, lastName, postalCode, address, dob, phoneNumber } = req.body;
-
-        // Find the organization profile for the authenticated user
-        let profile = await User.findById(req.user._id);
-
-        if (!profile) {
-            return res.status(404).json({
+        const vendor = await Vendor.findById(req.vendor); // Vendor authentication middleware
+        if (!vendor) {
+            return res.status(403).json({
                 success: false,
-                message: "Organization profile not found"
+                message: "You are unauthorized",
             });
         }
 
-        // Update only the provided fields
-        if (firstName !== undefined) {
-            profile.firstName = firstName;
-        }
 
-        if (lastName !== undefined) {
-            profile.lastName = lastName;
-        }
-        if (postalCode !== undefined) {
-            profile.postalCode = postalCode;
-        }
-        if (address !== undefined) {
-            profile.address = address;
-        }
-        if (dob !== undefined) {
-            profile.dob = dob;
-        }
-        if (phoneNumber !== undefined) {
-            profile.phoneNumber = phoneNumber;
-        }
 
-        // Handle profilePhoto upload if a file is provided
-        if (req.file) {
+        const { page = 1, limit = 9, sort = "date" } = req.query;
+        const skip = (page - 1) * limit;
 
-            try {
-                // Delete old profilePhoto from Cloudinary if it exists
-                if (profile.profilePhoto && profile.profilePhoto.publicId) {
-                    await cloudinary.uploader.destroy(profile.profilePhoto.publicId);
-                }
-
-                // Upload new profilePhoto to Cloudinary
-                const result = await cloudinary.uploader.upload(req.file.path, {
-                    folder: "idonatio/profilePhoto",
-                    width: 500,
-                    height: 500,
-                    crop: "fill"
-                });
-
-                // Update profilePhoto in profile
-                profile.profilePhoto = {
-                    publicId: result.public_id,
-                    url: result.secure_url
-                };
-                // Delete the temporary file after successful upload
-                if (fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                }
-            } catch (uploadErr) {
-
-                // Clean up the file if upload fails
-                if (req.file.path && fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                }
-                return res.status(500).json({
-                    success: false,
-                    message: `Failed to upload image: ${uploadErr.message}`
-                });
-            }
+        // Filter only completed bookings that have a review
+        const filter = {
+            vendor: vendor._id,
+            status: "completed",
+            rating: { $gt: 0 },
         };
 
-        // Save the updated profile
-        const updatedProfile = await profile.save();
+        // Fetch reviews with pagination
+        const reviews = await Booking.find(filter)
+            .select("clientName serviceType reviewDescription rating reviewDate")
+            .sort({ reviewDate: -1 })
+            .skip(skip)
+            .limit(Number(limit));
 
-        res.status(200).json({
+        // Compute total reviews and average rating
+        const totalReviews = await Booking.countDocuments(filter);
+        const averageRating = vendor.rating
+
+
+        return res.status(200).json({
             success: true,
-            message: "Organization profile updated successfully",
-            data: {
-                firstName: updatedProfile.firstName,
-                lastName: updatedProfile.lastName,
-                address: updatedProfile.address,
-                dob: updatedProfile.dob,
-                profilePhoto: updatedProfile.profilePhoto,
-                phoneNumber: updatedProfile.phoneNumber,
-                postalCode: updatedProfile.postalCode,
-            }
+            overview: {
+                averageRating,
+                totalReviews,
+            },
+            reviews,
+            pagination: {
+                currentPage: Number(page),
+                totalPages: Math.ceil(totalReviews / limit),
+            },
         });
     } catch (error) {
-        console.error("Error updating organization profile:", error);
-
-        // Handle validation errors
-        if (error.name === 'ValidationError') {
-            const errors = Object.values(error.errors).map(err => err.message);
-            return res.status(400).json({
-                success: false,
-                message: "Validation error",
-                errors
-            });
-        }
-
-
-        res.status(500).json({
+        console.error("Error fetching vendor reviews:", error);
+        return res.status(500).json({
             success: false,
-            message: "Server error while updating organization profile"
+            message: "Failed to fetch reviews",
         });
     }
 };
 
-
-export const getUserProfile = async (req, res) => {
-    try {
-        const profile = await User.findById(req.user._id).select("-password");
-
-        if (!profile) {
-            return res.status(404).json({
-                success: false,
-                message: "User not found"
-            });
-        }
-
-        res.json(profile);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};

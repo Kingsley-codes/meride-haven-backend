@@ -69,7 +69,9 @@ const bookingSchema = new mongoose.Schema(
         reviewDescription: {
             type: String,
         },
-
+        reviewDate: {
+            type: Date,
+        },
         // for other services excluding events
         duration: {
             type: Number,

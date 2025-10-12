@@ -1,6 +1,12 @@
 import Booking from "../models/bookingModel.js";
 import Service from "../models/serviceModel.js";
+import User from "../models/userModel.js";
 import Vendor from "../models/vendorModel.js";
+import { sendUserUpdateEmail } from "../utils/emailSender.js";
+import { UserVerificationCodes } from "../utils/verificationCodes.js";
+import fs from "fs";
+import { v2 as cloudinary } from 'cloudinary';
+
 
 
 
@@ -324,5 +330,224 @@ export const bookingRatingController = async (req, res) => {
             message: "Something went wrong",
             error: error.message,
         });
+    }
+};
+
+
+export const editProfileRequest = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        let profile = await User.findById(user);
+
+        const userEmail = profile.email;
+
+        // Send verification email
+        const verificationCode =
+            UserVerificationCodes.generateVerificationCode(userEmail);
+        await sendUserUpdateEmail(userEmail, verificationCode, false);
+
+        // Respond with success
+        res.status(201).json({
+            status: "success",
+            message: "Verification code sent to your email",
+        });
+
+    } catch (error) {
+
+    }
+};
+
+
+
+export const resendEditRequest = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        let profile = await User.findById(user);
+
+        const userEmail = profile.email;
+
+        // Check resend limitations (implement this in your VerificationCodes utility)
+        const resendStatus = UserVerificationCodes.canResendCode(userEmail, CodeTypes.VERIFICATION);
+
+        if (!resendStatus.canResend) {
+            return res.status(429).json({
+                status: "fail",
+                message: resendStatus.message || "Please wait before requesting a new code"
+            });
+        }
+
+        // Generate and send new code
+        const newCode = UserVerificationCodes.resendVerificationCode(userEmail);
+        await sendUserVerificationEmail(userEmail, newCode, true);
+
+        res.status(200).json({
+            status: "success",
+            message: "New verification code sent",
+        });
+
+    } catch (error) {
+
+    }
+}
+
+
+export const editProfile = async (req, res) => {
+    try {
+
+        const { verificationCode, fullName, gender, address, phoneNumber } = req.body;
+
+        const user = req.user;
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        if (!verificationCode) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Verification code required"
+            });
+        }
+
+        if (phoneNumber && !/^\d{11}$/.test(phoneNumber)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Phone number must be exactly 11 digits",
+            });
+        }
+
+        let profile = await User.findById(user);
+
+        const userEmail = profile.email;
+
+        if (!UserVerificationCodes.verifyVerificationCode(userEmail, verificationCode)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Invalid code"
+            });
+        }
+
+        // Update only the provided fields
+        if (fullName !== undefined) {
+            profile.fullName = fullName;
+        }
+
+        if (gender !== undefined) {
+            profile.gender = gender;
+        }
+        if (address !== undefined) {
+            profile.address = address;
+        }
+
+        if (phoneNumber !== undefined) {
+            profile.phone = phoneNumber;
+        }
+
+        // Handle profilePhoto upload if a file is provided
+        if (req.file) {
+
+            try {
+                // Delete old profilePhoto from Cloudinary if it exists
+                if (profile.profilePhoto && profile.profilePhoto.publicId) {
+                    await cloudinary.uploader.destroy(profile.profilePhoto.publicId);
+                }
+
+                // Upload new profilePhoto to Cloudinary
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "Meride Haven/profilePhoto",
+                    width: 500,
+                    height: 500,
+                    crop: "fill"
+                });
+
+                // Update profilePhoto in profile
+                profile.profilePhoto = {
+                    publicId: result.public_id,
+                    url: result.secure_url
+                };
+                // Delete the temporary file after successful upload
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+            } catch (uploadErr) {
+
+                // Clean up the file if upload fails
+                if (req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                return res.status(500).json({
+                    success: false,
+                    message: `Failed to upload image: ${uploadErr.message}`
+                });
+            }
+        };
+
+        // Save the updated profile
+        const updatedProfile = await profile.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Organization profile updated successfully",
+            data: {
+                fullName: updatedProfile.fullName,
+                address: updatedProfile.address,
+                profilePhoto: updatedProfile.profilePhoto,
+                phoneNumber: updatedProfile.phone,
+                gender: updatedProfile.gender,
+            }
+        });
+    } catch (error) {
+        console.error("Error updating organization profile:", error);
+
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: "Validation error",
+                errors
+            });
+        }
+
+
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating user profile",
+            error: error.message,
+        });
+    }
+};
+
+
+export const getUserProfile = async (req, res) => {
+    try {
+        const profile = await User.findById(req.user).select("-password -googleID");
+
+        if (!profile) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.json(profile);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };
