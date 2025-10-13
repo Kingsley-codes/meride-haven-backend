@@ -205,9 +205,15 @@ export const rejectVendor = async (req, res) => {
             });
         }
 
+        if (!declineReason) {
+            return res.status(404).json({
+                success: false,
+                message: "Must add reason for rejecting vendor"
+            });
+        }
+
         let vendor =
-            (await Vendor.findById(vendorId).select("-password -googleID")) ||
-            (await Driver.findById(vendorId).select("-password -googleID"));
+            (await Vendor.findById(vendorId).select("-password -googleID"))
 
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });

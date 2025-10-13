@@ -20,9 +20,21 @@ export const handleSuccessfulPayment = async (eventData) => {
         }
 
         // If payment is successful, update booking status
-        booking.status = "confirmed";
+        booking.status = "upcoming";
         booking.paymentStatus = "completed"
         await booking.save();
+
+        const client = await User.findOne({ phone: booking.clientEmail });
+
+        if (!client) {
+            console.log("User not found for: ", booking.clientEmail);
+            throw new Error("User not found");
+        }
+
+        client.bookings += 1;
+        client.lastBooking = new Date();
+        await client.save();
+
 
         return booking;
     } catch (error) {

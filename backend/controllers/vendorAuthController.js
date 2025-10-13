@@ -262,17 +262,31 @@ export const login = async (req, res) => {
             });
         }
 
-
         const token = signToken(vendor._id);
         vendor.password = undefined;
 
-        const response = {
-            status: "success",
-            token,
-            data: { vendor }
-        };
+        if (vendor.approvedStatus === 'rejected') {
+            if (vendor.declineReason !== "seems illegitimate") {
+                res.status(200).json({
+                    status: "partial",
+                    message: "please re-upload your kyc documents",
+                    token,
+                    data: { vendor }
+                });
+            } else {
+                return res.status(401).json({
+                    status: "fail",
+                    message: "Account not authorizd to use this patform"
+                });
+            }
 
-        res.status(200).json(response);
+        } else {
+            res.status(200).json({
+                status: "success",
+                token,
+                data: { vendor }
+            });
+        }
 
     } catch (err) {
         console.error('Login error:', err);

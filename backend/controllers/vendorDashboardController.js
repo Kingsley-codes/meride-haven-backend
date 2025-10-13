@@ -17,7 +17,7 @@ export const fetchAllBookings = async (req, res) => {
         // Base filter (no vendor yet)
         const filter = {};
 
-        if (status && ["in progress", "cancelled", "confirmed", "pending", "failed", "completed"].includes(status)) {
+        if (status && ["in progress", "cancelled", "upcoming", "pending", "failed", "completed"].includes(status)) {
             filter.status = status;
         }
 
@@ -92,17 +92,6 @@ export const acceptBooking = async (req, res) => {
                 message: "Booking not found or already accepted",
             });
         }
-
-        const client = await User.findOne({ phone: booking.clientNumber });
-
-        if (!client) {
-            console.log("User not found for: ", booking.clientNumber);
-            throw new Error("User not found");
-        }
-
-        client.bookings += 1;
-        client.lastBooking = new Date();
-        await client.save();
 
         return res.status(200).json({
             success: true,

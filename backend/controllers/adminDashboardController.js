@@ -21,7 +21,7 @@ export const fetchAllBookings = async (req, res) => {
             filter.paymentStatus = paymentStatus;
         }
 
-        if (status && ["in progress", "cancelled", "confirmed", "pending", "failed", "completed"].includes(status)) {
+        if (status && ["in progress", "cancelled", "upcoming", "pending", "failed", "completed"].includes(status)) {
             filter.status = status;
         }
 
@@ -76,7 +76,7 @@ export const fetchAllBookings = async (req, res) => {
                 createdAt: { $gte: currentMonthStart, $lt: nextMonthStart },
             }),
             Booking.countDocuments({
-                status: "confirmed",
+                status: "upcoming",
                 createdAt: { $gte: currentMonthStart, $lt: nextMonthStart },
             }),
             Booking.countDocuments({
@@ -110,7 +110,7 @@ export const fetchAllBookings = async (req, res) => {
                 createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
             }),
             Booking.countDocuments({
-                status: "confirmed",
+                status: "upcoming",
                 createdAt: { $gte: lastMonthStart, $lte: lastMonthEnd },
             }),
             Booking.countDocuments({
@@ -142,7 +142,7 @@ export const fetchAllBookings = async (req, res) => {
                 count: completedCurrent,
                 change: percentChange(completedCurrent, completedLast),
             },
-            confirmed: {
+            upcoming: {
                 count: confirmedCurrent,
                 change: percentChange(confirmedCurrent, confirmedLast),
             },

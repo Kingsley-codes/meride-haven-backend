@@ -66,7 +66,7 @@ export const fetchAllBookings = async (req, res) => {
         // Base filter 
         const filter = {};
 
-        if (status && ["in progress", "cancelled", "confirmed", "completed"].includes(status)) {
+        if (status && ["in progress", "cancelled", "upcoming", "completed"].includes(status)) {
             filter.status = status;
         }
 
