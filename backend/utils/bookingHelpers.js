@@ -24,7 +24,7 @@ export const handleSuccessfulPayment = async (eventData) => {
         booking.paymentStatus = "completed"
         await booking.save();
 
-        const client = await User.findOne({ phone: booking.clientEmail });
+        const client = await User.findOne({ email: booking.clientEmail });
 
         if (!client) {
             console.log("User not found for: ", booking.clientEmail);

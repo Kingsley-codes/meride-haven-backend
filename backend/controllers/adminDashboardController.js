@@ -336,6 +336,10 @@ export const fetchSingleClient = async (req, res) => {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
+            .populate({
+                path: "vendor",
+                select: "businessName", // only fetch businessName
+            })
             .lean();
 
         return res.status(200).json({

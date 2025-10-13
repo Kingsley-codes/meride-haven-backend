@@ -92,6 +92,10 @@ const vendorSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    profilePhoto: {
+        publicId: { type: String },
+        url: { type: String }
+    },
 }, { timestamps: true }
 );
 

@@ -229,7 +229,7 @@ export const verifyPayment = async (req, res) => {
 
         // If successful → mark in progress
         if (paymentStatus === "successful") {
-            if (booking.status === "confirmed") {
+            if (booking.status === "upcoming") {
                 return res.status(200).json({
                     success: true,
                     message: "Payment already verified and booking is active",
@@ -237,7 +237,7 @@ export const verifyPayment = async (req, res) => {
                 });
             }
 
-            booking.status = "confirmed";
+            booking.status = "upcoming";
             await booking.save();
 
             return res.status(200).json({
