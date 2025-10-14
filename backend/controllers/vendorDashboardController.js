@@ -365,104 +365,16 @@ export const getVendorEarnings = async (req, res) => {
 };
 
 
-export const editProfileRequest = async (req, res) => {
-    try {
-        const vendor = req.vendor;
-        if (!vendor) {
-            return res.status(403).json({
-                success: false,
-                message: "You are Unauthorized",
-            });
-        }
-
-        let profile = await Vendor.findById(vendor);
-
-        const userEmail = profile.email;
-
-        // Send verification email
-        const verificationCode =
-            VendorVerificationCodes.generateVerificationCode(userEmail);
-        await sendUserUpdateEmail(userEmail, verificationCode, false);
-
-        // Respond with success
-        res.status(201).json({
-            status: "success",
-            message: "Verification code sent to your email",
-        });
-
-    } catch (error) {
-        console.error("Error fetching vendor earnings:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Something went wrong",
-            error: error.message,
-        });
-    }
-};
-
-
-
-export const resendEditRequest = async (req, res) => {
-    try {
-        const vendor = req.vendor;
-        if (!vendor) {
-            return res.status(403).json({
-                success: false,
-                message: "You are Unauthorized",
-            });
-        }
-
-        let profile = await Vendor.findById(vendor);
-
-        const userEmail = profile.email;
-
-        // Check resend limitations (implement this in your VerificationCodes utility)
-        const resendStatus = VendorVerificationCodes.canResendCode(userEmail, CodeTypes.VERIFICATION);
-
-        if (!resendStatus.canResend) {
-            return res.status(429).json({
-                status: "fail",
-                message: resendStatus.message || "Please wait before requesting a new code"
-            });
-        }
-
-        // Generate and send new code
-        const newCode = VendorVerificationCodes.resendVerificationCode(userEmail);
-        await sendUserVerificationEmail(userEmail, newCode, true);
-
-        res.status(200).json({
-            status: "success",
-            message: "New verification code sent",
-        });
-
-    } catch (error) {
-        console.error("Error fetching vendor earnings:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Something went wrong",
-            error: error.message,
-        });
-    }
-}
-
-
 export const editProfile = async (req, res) => {
     try {
 
-        const { verificationCode, address, phoneNumber } = req.body;
+        const { address, phoneNumber } = req.body;
 
         const vendor = req.vendor;
         if (!vendor) {
             return res.status(403).json({
                 success: false,
                 message: "You are Unauthorized",
-            });
-        }
-
-        if (!verificationCode) {
-            return res.status(400).json({
-                status: "fail",
-                message: "Verification code required"
             });
         }
 
@@ -474,15 +386,6 @@ export const editProfile = async (req, res) => {
         }
 
         let profile = await Vendor.findById(vendor);
-
-        const userEmail = profile.email;
-
-        if (!VendorVerificationCodes.verifyVerificationCode(userEmail, verificationCode)) {
-            return res.status(400).json({
-                status: "fail",
-                message: "Invalid code"
-            });
-        }
 
         if (address !== undefined) {
             profile.address = address;

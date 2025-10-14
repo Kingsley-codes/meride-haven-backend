@@ -74,7 +74,11 @@ export const fetchAllBookings = async (req, res) => {
         const bookings = await Booking.find({
             ...filter,
             client: user,
-        }).sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 })
+            .populate({
+                path: "service",
+                select: "image1 serviceName", // only fetch image1
+            });
 
         return res.status(200).json({
             success: true,
@@ -334,104 +338,17 @@ export const bookingRatingController = async (req, res) => {
 };
 
 
-export const editProfileRequest = async (req, res) => {
-    try {
-        const user = req.user;
-        if (!user) {
-            return res.status(403).json({
-                success: false,
-                message: "You are Unauthorized",
-            });
-        }
-
-        let profile = await User.findById(user);
-
-        const userEmail = profile.email;
-
-        // Send verification email
-        const verificationCode =
-            UserVerificationCodes.generateVerificationCode(userEmail);
-        await sendUserUpdateEmail(userEmail, verificationCode, false);
-
-        // Respond with success
-        res.status(201).json({
-            status: "success",
-            message: "Verification code sent to your email",
-        });
-
-    } catch (error) {
-        console.error("Error fetching vendor earnings:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Something went wrong",
-            error: error.message,
-        });
-    }
-};
-
-
-
-export const resendEditRequest = async (req, res) => {
-    try {
-        const user = req.user;
-        if (!user) {
-            return res.status(403).json({
-                success: false,
-                message: "You are Unauthorized",
-            });
-        }
-
-        let profile = await User.findById(user);
-
-        const userEmail = profile.email;
-
-        // Check resend limitations (implement this in your VerificationCodes utility)
-        const resendStatus = UserVerificationCodes.canResendCode(userEmail, CodeTypes.VERIFICATION);
-
-        if (!resendStatus.canResend) {
-            return res.status(429).json({
-                status: "fail",
-                message: resendStatus.message || "Please wait before requesting a new code"
-            });
-        }
-
-        // Generate and send new code
-        const newCode = UserVerificationCodes.resendVerificationCode(userEmail);
-        await sendUserVerificationEmail(userEmail, newCode, true);
-
-        res.status(200).json({
-            status: "success",
-            message: "New verification code sent",
-        });
-
-    } catch (error) {
-        console.error("Error fetching vendor earnings:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Something went wrong",
-            error: error.message,
-        });
-    }
-}
-
 
 export const editProfile = async (req, res) => {
     try {
 
-        const { verificationCode, fullName, gender, address, phoneNumber } = req.body;
+        const { fullName, gender, address, phoneNumber } = req.body;
 
         const user = req.user;
         if (!user) {
             return res.status(403).json({
                 success: false,
                 message: "You are Unauthorized",
-            });
-        }
-
-        if (!verificationCode) {
-            return res.status(400).json({
-                status: "fail",
-                message: "Verification code required"
             });
         }
 
@@ -443,15 +360,6 @@ export const editProfile = async (req, res) => {
         }
 
         let profile = await User.findById(user);
-
-        const userEmail = profile.email;
-
-        if (!UserVerificationCodes.verifyVerificationCode(userEmail, verificationCode)) {
-            return res.status(400).json({
-                status: "fail",
-                message: "Invalid code"
-            });
-        }
 
         // Update only the provided fields
         if (fullName !== undefined) {

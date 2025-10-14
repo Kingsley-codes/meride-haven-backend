@@ -3,7 +3,6 @@ import {
     acceptBooking,
     cancelBooking,
     editProfile,
-    editProfileRequest,
     fetchAllBookings,
     fetchReviews,
     getUserProfile,
@@ -27,9 +26,7 @@ vendorDashboardRouter.post("/bookings/cancel", vendorAuthenticate, cancelBooking
 
 
 vendorDashboardRouter.get("/profile", vendorAuthenticate, getUserProfile);
-vendorDashboardRouter.post("/profile/edit-request", vendorAuthenticate, editProfileRequest);
 vendorDashboardRouter.patch("/profile/edit", vendorAuthenticate, singleUpload.single("profilePhoto"), editProfile);
-vendorDashboardRouter.post("/profile/resend", vendorAuthenticate, editProfileRequest);
 
 
 export default vendorDashboardRouter;
