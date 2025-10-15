@@ -40,6 +40,14 @@ const adminSchema = new mongoose.Schema(
             },
             minlength: 8,
         },
+        role: {
+            type: String,
+            enum: ["super-admin", "support staff"]
+        },
+        status: {
+            type: String,
+            enum: ["invited", "active", "inactive"]
+        },
     },
     { timestamps: true }
 );

@@ -6,6 +6,7 @@ import { sendUserUpdateEmail } from "../utils/emailSender.js";
 import { UserVerificationCodes } from "../utils/verificationCodes.js";
 import fs from "fs";
 import { v2 as cloudinary } from 'cloudinary';
+import Ticket from "../models/ticketModel.js";
 
 
 
@@ -51,6 +52,10 @@ import { v2 as cloudinary } from 'cloudinary';
 // };
 
 
+// Helper function to generate unique Booking IDs
+export const generateTicketID = () => 'TK-#' + Math.random().toString(36).substring(3, 8).toUpperCase();
+
+
 export const fetchAllBookings = async (req, res) => {
     try {
         const user = req.user;
@@ -69,7 +74,6 @@ export const fetchAllBookings = async (req, res) => {
         if (status && ["in progress", "cancelled", "upcoming", "completed"].includes(status)) {
             filter.status = status;
         }
-
 
         const bookings = await Booking.find({
             ...filter,
@@ -467,5 +471,157 @@ export const getUserProfile = async (req, res) => {
         res.json(profile);
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+
+export const createTicket = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { bookingID, conflict } = req.body;
+
+        const booking = await Booking.findOne({ bookingID: bookingID });
+
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        let ticketImage = {}
+
+        // Handle profilePhoto upload if a file is provided
+        if (req.file) {
+
+            try {
+                // Upload new profilePhoto to Cloudinary
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "Meride Haven/ticketPhoto",
+                    width: 500,
+                    height: 500,
+                    crop: "fill"
+                });
+
+                // Update profilePhoto in profile
+                ticketImage = {
+                    publicId: result.public_id,
+                    url: result.secure_url
+                };
+                // Delete the temporary file after successful upload
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+            } catch (uploadErr) {
+
+                // Clean up the file if upload fails
+                if (req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                return res.status(500).json({
+                    success: false,
+                    message: `Failed to upload image: ${uploadErr.message}`
+                });
+            }
+        };
+
+        const serviceVendor = await Vendor.findById(booking.vendor).select("businessName")
+
+        const ticket = await Ticket.create({
+            client: booking.client,
+            clientName: booking.clientName,
+            service: booking.service,
+            serviceName: booking.serviceName,
+            vendor: booking.vendor,
+            serviceType: booking.serviceType,
+            bookingID: booking.bookingID,
+            ticketID: generateTicketID(),
+            conflict,
+            image: ticketImage,
+            vendorName: serviceVendor.businessName
+        })
+
+        res.status(200).json({
+            success: true,
+            message: "Ticket created successfully",
+            data: ticket
+        });
+
+    } catch (error) {
+        console.error("Error creating ticket:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while creating ticket",
+            error: error.message,
+        });
+    }
+}
+
+
+export const fetchAllTickets = async (req, res) => {
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { status, q } = req.query;
+
+        // Base filter 
+        const filter = {};
+
+        if (status && ["in progress", "opened", "resolved"].includes(status)) {
+            filter.status = status;
+        }
+
+        if (q) {
+            filter.$or = [
+                { ticketID: { $regex: q, $options: "i" } },
+            ];
+        }
+
+        const totalTickets = await Ticket.countDocuments({ client: user });
+
+
+        // --- Pagination ---
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const tickets = await Ticket.find({
+            ...filter,
+            client: user,
+        }).sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        return res.status(200).json({
+            success: true,
+            message: "Tickets fetched successfully",
+            tickets,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalTickets / limit),
+                perPage: limit,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching bookings:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while fetching bookings",
+            error: error.message,
+        });
     }
 };

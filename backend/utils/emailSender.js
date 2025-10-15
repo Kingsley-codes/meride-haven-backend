@@ -2,33 +2,33 @@ import nodemailer from "nodemailer";
 
 // Create transporter with Google SMTP
 const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS, // Use App Password if 2FA is enabled
-    },
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS, // Use App Password if 2FA is enabled
+  },
 });
 
 // Verify transporter connection
 transporter.verify((error, success) => {
-    if (error) {
-        console.error('SMTP connection error:', error);
-    } else {
-        console.log('SMTP server is ready to take messages');
-    }
+  if (error) {
+    console.error('SMTP connection error:', error);
+  } else {
+    console.log('SMTP server is ready to take messages');
+  }
 });
 
 
 export const sendVendorVerificationEmail = async (email, code, isResend = false) => {
-    const subject = isResend
-        ? 'New Verification Code To Your Meride Haven Vendor Account'
-        : "Verify To Your Meride Haven Vendor Account";
+  const subject = isResend
+    ? 'New Verification Code To Your Meride Haven Vendor Account'
+    : "Verify To Your Meride Haven Vendor Account";
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -124,7 +124,7 @@ export const sendVendorVerificationEmail = async (email, code, isResend = false)
       </body>
       </html>
     `,
-        text: `
+    text: `
       ${isResend ? 'New Verification Code for Your Meride Haven Vendor Account' : 'Verify Your Meride Haven Vendor Account'}
 
       ${isResend ? 'Here is your new verification code:' : 'Thank you for creating a vendor account with Meride Haven.'}
@@ -137,27 +137,27 @@ export const sendVendorVerificationEmail = async (email, code, isResend = false)
 
       © ${new Date().getFullYear()} Meride Haven. All rights reserved.
     `,
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor verification email:", error);
-        throw new Error(`Failed to send verification email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor verification email:", error);
+    throw new Error(`Failed to send verification email: ${error.message}`);
+  }
 };
 
 export const sendUserVerificationEmail = async (email, code, isResend = false) => {
-    const subject = isResend
-        ? 'New Verification Code To Your Meride Haven Account'
-        : "Verify To Your Meride Haven Account";
+  const subject = isResend
+    ? 'New Verification Code To Your Meride Haven Account'
+    : "Verify To Your Meride Haven Account";
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -253,7 +253,7 @@ export const sendUserVerificationEmail = async (email, code, isResend = false) =
       </body>
       </html>
     `,
-        text: `
+    text: `
       ${isResend ? 'New Verification Code for Your Meride Haven Account' : 'Verify Your Meride Haven Account'}
 
       ${isResend ? 'Here is your new verification code:' : 'Thank you for creating an account with Meride Haven.'}
@@ -266,29 +266,29 @@ export const sendUserVerificationEmail = async (email, code, isResend = false) =
 
       © ${new Date().getFullYear()} Meride Haven. All rights reserved.
     `,
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`User verification email sent to ${email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending user verification email:", error);
-        throw new Error(`Failed to send verification email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`User verification email sent to ${email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending user verification email:", error);
+    throw new Error(`Failed to send verification email: ${error.message}`);
+  }
 };
 
 
 export const sendUserUpdateEmail = async (email, code, isResend = false) => {
-    const subject = isResend
-        ? 'New Verification Code To Your Meride Haven Profile'
-        : "Verify To Your Meride Haven Profile";
+  const subject = isResend
+    ? 'New Verification Code To Your Meride Haven Profile'
+    : "Verify To Your Meride Haven Profile";
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -384,7 +384,7 @@ export const sendUserUpdateEmail = async (email, code, isResend = false) => {
       </body>
       </html>
     `,
-        text: `
+    text: `
       ${isResend ? 'New Verification Code for Your Meride Haven profile' : 'Verify Your Meride Haven profile'}
 
       ${isResend ? 'Here is your new verification code:' : 'You requested to update your Meride Haven profile.'}
@@ -397,27 +397,27 @@ export const sendUserUpdateEmail = async (email, code, isResend = false) => {
 
       © ${new Date().getFullYear()} Meride Haven. All rights reserved.
     `,
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`User verification email sent to ${email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending user verification email:", error);
-        throw new Error(`Failed to send verification email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`User verification email sent to ${email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending user verification email:", error);
+    throw new Error(`Failed to send verification email: ${error.message}`);
+  }
 };
 
 
 export const sendVendorPasswordResetEmail = async (email, code) => {
-    const resetLink = `${process.env.FRONTEND_URL}/resetPassword?email=${encodeURIComponent(email)}&code=${code}`;
+  const resetLink = `${process.env.FRONTEND_URL}/resetPassword?email=${encodeURIComponent(email)}&code=${code}`;
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: "Password Reset Request for Meride Haven Vendor Account",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Password Reset Request for Meride Haven Vendor Account",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -519,7 +519,7 @@ export const sendVendorPasswordResetEmail = async (email, code) => {
       </body>
       </html>
     `,
-        text: `
+    text: `
       Password Reset Request for Meride Haven Vendor Account
 
       We received a request to reset your password.
@@ -534,26 +534,26 @@ export const sendVendorPasswordResetEmail = async (email, code) => {
 
       © ${new Date().getFullYear()} Meride Haven. All rights reserved.
     `,
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Vendor password reset email sent to ${email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor password reset email:", error);
-        throw new Error(`Failed to send password reset email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor password reset email sent to ${email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor password reset email:", error);
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
 };
 
 export const sendUserPasswordResetEmail = async (email, code) => {
-    const resetLink = `${process.env.FRONTEND_URL}/resetPassword?email=${encodeURIComponent(email)}&code=${code}`;
+  const resetLink = `${process.env.FRONTEND_URL}/resetPassword?email=${encodeURIComponent(email)}&code=${code}`;
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: email,
-        subject: "Password Reset Request for Meride Haven Account",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject: "Password Reset Request for Meride Haven Account",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -655,7 +655,7 @@ export const sendUserPasswordResetEmail = async (email, code) => {
       </body>
       </html>
     `,
-        text: `
+    text: `
       Password Reset Request for Meride Haven Account
 
       We received a request to reset your password.
@@ -670,14 +670,70 @@ export const sendUserPasswordResetEmail = async (email, code) => {
 
       © ${new Date().getFullYear()} Meride Haven. All rights reserved.
     `,
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`User password reset email sent to ${email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending user password reset email:", error);
-        throw new Error(`Failed to send password reset email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`User password reset email sent to ${email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending user password reset email:", error);
+    throw new Error(`Failed to send password reset email: ${error.message}`);
+  }
+};
+
+
+export const sendInvitationEmail = async (email, token, inviterName, isResend = false) => {
+  const invitationLink = `${process.env.FRONTEND_URL}/set-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+  const subject = isResend
+    ? 'New Invitation to Join Our Platform'
+    : 'Invitation to Join Our Platform';
+
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: email,
+    subject,
+    html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="color: #007bff">
+                  <h3 class="logo">iDonatio</h3>
+                  <h2>You've Been Invited!</h2>
+                </div>
+                <p>Hello,</p>
+                <p>${inviterName} has invited you to join our platform. 
+                   ${isResend ? 'Here is a new invitation link.' : ''}</p>                
+                <p>Click the link below to set up your password and complete your registration.</p>
+                <p style="text-align: center; margin: 30px 0;">
+                    <a href="${invitationLink}" 
+                       style="background-color: #007bff; color: white; padding: 12px 24px; 
+                              text-decoration: none; border-radius: 4px; font-weight: bold;">
+                        Set Up Your Password
+                    </a>
+                </p>
+                <p>This invitation link will expire in 1 hour.</p>
+
+                 ${isResend ? `
+                <p style="color: #dc3545; font-weight: bold;">
+                    Note: Previous invitation links are no longer valid. Please use this new link.
+                </p>
+                ` : ''}
+
+                <p>If you didn't request this invitation, please ignore this email.</p>
+                <hr>
+                <p style="color: #666; font-size: 12px;">
+                    This is an automated message, please do not reply to this email.
+                </p>
+            </div>
+        `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`Invitation email ${isResend ? 're' : ''}sent successfully to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('Error sending invitation email:', error);
+    throw new Error('Failed to send invitation email');
+  }
 };

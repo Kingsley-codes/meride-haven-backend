@@ -183,7 +183,7 @@ export const createService = async (req, res) => {
             vendorName: vendor.businessName,
             vendorID,
             location,
-            description,
+            description, 
             availability,
             image1: image1 ? image1Result : undefined,
             image2: image2 ? image2Result : undefined,

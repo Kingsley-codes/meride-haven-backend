@@ -92,6 +92,9 @@ const bookingSchema = new mongoose.Schema(
         securityDeposit: {
             type: Number,
         },
+        completionTime: {
+            type: Date,
+        },
 
         // for other services excluding events
         time: {

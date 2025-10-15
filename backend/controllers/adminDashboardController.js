@@ -1,5 +1,13 @@
+import mongoose from "mongoose";
 import Booking from "../models/bookingModel.js";
 import User from "../models/userModel.js";
+import Admin from "../models/adminModel.js";
+import crypto from "crypto";
+import Token from "../models/tokenModel.js";
+import { sendInvitationEmail } from "../utils/emailSender.js";
+import bcrypt from "bcrypt";
+
+
 
 
 export const fetchAllBookings = async (req, res) => {
@@ -42,7 +50,7 @@ export const fetchAllBookings = async (req, res) => {
             .sort({ createdAt: -1 })
             .populate({
                 path: "vendor",
-                select: "vendorName",
+                select: "vendorName, bankDetails",
             })
             .lean();
 
@@ -455,3 +463,559 @@ export const activateClient = async (req, res) => {
         });
     }
 }
+
+
+
+export const getBookingAnalytics = async (req, res) => {
+    try {
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        // 1️⃣ BOOKING SUMMARY — Total bookings for each month (Jan–Dec)
+        const bookingSummary = await Booking.aggregate([
+            {
+                $group: {
+                    _id: { $month: "$createdAt" },
+                    totalBookings: { $sum: 1 }
+                }
+            },
+            {
+                $project: {
+                    month: "$_id",
+                    totalBookings: 1,
+                    _id: 0
+                }
+            },
+            { $sort: { month: 1 } } // chronological order
+        ]);
+
+        // 2️⃣ REVENUE TREND — Total revenue from completed bookings, per month, per service type
+        const revenueTrend = await Booking.aggregate([
+            {
+                $match: { status: "completed" }
+            },
+            {
+                $group: {
+                    _id: {
+                        month: { $month: "$createdAt" },
+                        serviceType: "$serviceType"
+                    },
+                    totalRevenue: { $sum: "$price" }
+                }
+            },
+            {
+                $project: {
+                    month: "$_id.month",
+                    serviceType: "$_id.serviceType",
+                    totalRevenue: 1,
+                    _id: 0
+                }
+            },
+            { $sort: { month: 1 } }
+        ]);
+
+        // 3️⃣ TOP 5 MOST REQUESTED SERVICES
+        const topServices = await Booking.aggregate([
+            {
+                $group: {
+                    _id: "$service",
+                    totalBookings: { $sum: 1 }
+                }
+            },
+            { $sort: { totalBookings: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: "services", // must match the actual collection name
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "serviceInfo"
+                }
+            },
+            { $unwind: "$serviceInfo" },
+            {
+                $project: {
+                    _id: 0,
+                    serviceName: "$serviceInfo.serviceName",
+                    serviceType: "$serviceInfo.serviceType",
+                    price: "$serviceInfo.price",
+                    totalBookings: 1
+                }
+            }
+        ]);
+
+        // ✅ Return combined analytics
+        res.status(200).json({
+            success: true,
+            message: "Booking analytics retrieved successfully",
+            data: {
+                bookingSummary,
+                revenueTrend,
+                topServices
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching booking analytics:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while fetching booking analytics",
+            error: error.message
+        });
+    }
+};
+
+
+// inviteController.js
+
+export const inviteAdmin = async (req, res) => {
+
+    const admin = req.admin;
+    if (!admin) {
+        return res.status(403).json({
+            success: false,
+            message: "You are Unauthorized",
+        });
+    }
+
+    const adminDetails = await Admin.findById(admin)
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { fullName, email, phone, role } = req.body;
+        const inviterName = adminDetails.fullName;
+        const inviterRole = adminDetails.role
+
+        // Define role hierarchy (higher index = higher privilege)
+        const roleHierarchy = {
+            'support staff': 0,
+            'super-admin': 1
+        };
+
+
+        // Validate required fields
+        if (!fullName || !email || !role || !phone) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Full name, email, nin, phone number and role are required"
+            });
+        }
+
+        // --- NEW: Email format validation ---
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Please provide a valid email address"
+            });
+        }
+
+
+        // --- NEW: Clean and validate the role ---
+        let cleanRole = role;
+        // Handle case where role comes as a stringified array like "[admin]"
+        if (typeof role === 'string' && role.startsWith('[') && role.endsWith(']')) {
+            try {
+                // Attempt to parse the string into an array and take the first element
+                const parsedArray = JSON.parse(role);
+                cleanRole = parsedArray[0]; // Get the first item from the array
+            } catch (parseError) {
+                // If parsing fails, clean the string by removing brackets
+                cleanRole = role.replace(/[\[\]"]/g, '');
+            }
+        }
+
+        // Final check if the role is valid/non-empty
+        if (!cleanRole) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "A valid role is required"
+            });
+        }
+
+        // --- NEW: Authorization Check ---
+        // Check if inviter is allowed to assign this role
+        const inviterRoleLevel = roleHierarchy[inviterRole];
+        const targetRoleLevel = roleHierarchy[cleanRole];
+
+        if (inviterRoleLevel === undefined || targetRoleLevel === undefined) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role specified"
+            });
+        }
+
+        if (targetRoleLevel > inviterRoleLevel) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({
+                success: false,
+                message: `You cannot assign a role higher than your current role (${inviterRole})`
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await Admin.findOne({ email }).session(session);
+        if (existingUser) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "User with this email already exists"
+            });
+        }
+
+        // Create new user with temporary password
+        const newAdmin = new Admin({
+            fullName,
+            email,
+            phone,
+            status: "invited",
+            role,
+            isVerified: false // Will be set to true after password setup
+        });
+
+        await newAdmin.save({ session });
+
+        // Generate invitation token
+        const token = crypto.randomBytes(32).toString('hex');
+        const invitationToken = new Token({
+            adminId: newAdmin._id,
+            token
+        });
+
+        await invitationToken.save({ session });
+
+        // Send invitation email
+        await sendInvitationEmail(email, token, inviterName, false);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(201).json({
+            success: true,
+            message: "Invitation sent successfully",
+            data: {
+                adminId: newAdmin._id,
+                email: newAdmin.email
+            }
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        console.error("Error inviting user:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to send invitation",
+            error: error.message
+        });
+    }
+};
+
+
+
+export const setPassword = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { token, password, confirmPassword } = req.body;
+
+        if (!token || !password || !confirmPassword) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Token and password are required"
+            });
+        }
+
+        // Validate token
+        const tokenDoc = await Token.findOne({ token }).session(session);
+        if (!tokenDoc) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Invalid or expired token"
+            });
+        }
+
+        // Update user password and set as verified
+        const admin = await Admin.findById(tokenDoc.userId).session(session);
+        if (!admin) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Admin not found"
+            });
+        }
+
+        admin.password = await bcrypt.hash(password, 12);
+        admin.isVerified = true;
+        admin.status = "active";
+        await admin.save({ session });
+
+        // Delete used token
+        await Token.deleteOne({ _id: tokenDoc._id }).session(session);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+            success: true,
+            message: "Password set successfully. You can now login."
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        console.error("Error setting password:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to set password",
+            error: error.message
+        });
+    }
+};
+
+
+
+// controllers/inviteController.js (add this function)
+export const resendInvitation = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    const admin = req.admin;
+    if (!admin) {
+        return res.status(403).json({
+            success: false,
+            message: "You are Unauthorized",
+        });
+    }
+
+    try {
+        const { adminId } = req.body;
+        const adminDetails = await Admin.findById(admin)
+        const inviterName = adminDetails.fullName;
+
+
+        // Validate user exists and is not verified
+        const admin = await Admin.findById(adminId).session(session);
+        if (!admin) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        if (admin.isVerified) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Admin has already completed registration"
+            });
+        }
+
+        // Remove any existing invitation tokens for this user
+        await Token.deleteMany({
+            adminId: admin._id,
+            type: "invitation"
+        }).session(session);
+
+        // Generate new invitation token
+        const token = crypto.randomBytes(32).toString('hex');
+        const invitationToken = new Token({
+            adminId: admin._id,
+            token,
+            type: "invitation"
+        });
+
+        await invitationToken.save({ session });
+
+        // Send invitation email
+        await sendInvitationEmail(admin.email, token, inviterName);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+            success: true,
+            message: "Invitation resent successfully",
+            data: {
+                adminId: admin._id,
+                email: admin.email,
+                expiresAt: new Date(Date.now() + 3600 * 1000) // 1 hour from now
+            }
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        console.error("Error resending invitation:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to resend invitation",
+            error: error.message
+        });
+    }
+};
+
+
+export const editUserRole = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { adminId, newRole } = req.body;
+
+        const inviterId = req.admin;
+        if (!inviterId) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const adminDetails = await Admin.findById(inviterId)
+        const inviterName = adminDetails.fullName;
+
+        // Define role hierarchy (higher index = higher privilege)
+        const roleHierarchy = {
+            'support staff': 0,
+            'super-admin': 1
+        };
+
+        // Validate required fields
+        if (!adminId || !newRole) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Admin ID and new role are required"
+            });
+        }
+
+        // Check if new role is valid
+        if (!roleHierarchy.hasOwnProperty(newRole)) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role specified. Valid roles: support staff, super-admin"
+            });
+        }
+
+        // Check if user is trying to edit themselves
+        if (adminId === inviterId.toString()) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({
+                success: false,
+                message: "You cannot edit your own role"
+            });
+        }
+
+        // Check if inviter is allowed to assign this role
+        const inviterRoleLevel = roleHierarchy[inviterRole];
+        const targetRoleLevel = roleHierarchy[newRole];
+
+        if (targetRoleLevel > inviterRoleLevel) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({
+                success: false,
+                message: `You cannot assign a role higher than your current role (${inviterRole})`
+            });
+        }
+
+        // Find the target user
+        const targetUser = await User.findById(adminId).session(session);
+        if (!targetUser) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+
+        // Prevent editing roles of users with equal or higher roles
+        const currentTargetRoleLevel = roleHierarchy[targetUser.role];
+        if (currentTargetRoleLevel >= inviterRoleLevel) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(403).json({
+                success: false,
+                message: `You cannot edit the role of a user with ${targetUser.role} role or higher`
+            });
+        }
+
+        // Update the user's role
+        targetUser.role = newRole;
+        targetUser.updatedAt = new Date();
+        await targetUser.save({ session });
+
+        // Log the role change (optional - you might want to create an audit log)
+        console.log(`Admin ${inviterId} changed role of user ${adminId} from ${targetUser.role} to ${newRole}`);
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+            success: true,
+            message: "User role updated successfully",
+            data: {
+                adminId: targetUser._id,
+                email: targetUser.email,
+                previousRole: targetUser.role,
+                newRole: newRole,
+                updatedAt: targetUser.updatedAt
+            }
+        });
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+
+        console.error("Error editing user role:", error);
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid user ID format"
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Failed to update user role",
+            error: error.message
+        });
+    }
+};
+
+

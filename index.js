@@ -14,6 +14,7 @@ import bookingRouter from './backend/routes/bookingRoutes.js';
 import adminDashboardRouter from './backend/routes/adminDashboardRoutes.js';
 import vendorDashboardRouter from './backend/routes/vendorDashboardRoute.js';
 import userDashboardRouter from './backend/routes/userDashboardRoutes.js';
+import BookingService from './backend/utils/bookingService.js';
 
 
 
@@ -45,6 +46,7 @@ try {
     process.exit(1);
 }
 
+BookingService.initCronJob();
 
 // Basic route for testing
 app.get('/', (req, res) => {

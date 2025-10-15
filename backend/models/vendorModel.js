@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import validator from "validator";
+import { bankSchema } from "./allVendorSchema.js";
 
 
 const vendorSchema = new mongoose.Schema({
@@ -87,6 +88,9 @@ const vendorSchema = new mongoose.Schema({
     completedBookings: {
         type: Number,
         default: 0
+    },
+    bankDetails: {
+        type: bankSchema
     },
     rating: {
         type: Number,

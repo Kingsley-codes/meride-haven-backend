@@ -1,7 +1,7 @@
 import Booking from "../models/bookingModel.js";
+import Service from "../models/serviceModel.js";
 import Vendor from "../models/vendorModel.js";
 import mongoose from "mongoose";
-import { VendorVerificationCodes } from "../utils/verificationCodes.js";
 
 export const fetchAllBookings = async (req, res) => {
     try {
@@ -473,7 +473,7 @@ export const editProfile = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
     try {
-        const profile = await User.findById(req.user).select("-password -googleID");
+        const profile = await Vendor.findById(req.user).select("-password -googleID");
 
         if (!profile) {
             return res.status(404).json({
@@ -485,5 +485,96 @@ export const getUserProfile = async (req, res) => {
         res.json(profile);
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+
+export const fetchVendorDashoboard = async (req, res) => {
+    try {
+        const vendor = req.vendor;
+        if (!vendor) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        // --- 1. All-time total earnings (all completed bookings) ---
+        const allTimeEarnings = await Booking.aggregate([
+            { $match: { vendor: new mongoose.Types.ObjectId(vendorID), status: "completed" } },
+            { $group: { _id: null, totalEarnings: { $sum: "$price" } } },
+        ]);
+
+        const totalService = await Service.countDocuments({ vendorID: vendor });
+
+        const totalBookings = await Booking.countDocuments({ vendor: vendor });
+
+        const recentBookings = await Booking.find({ vendor: vendor })
+            .sort({ createdAt: -1 })
+            .limit(5);
+
+        return res.status(200).json({
+            success: true,
+            allTimeEarnings,
+            totalService,
+            totalBookings,
+            recentBookings
+        });
+
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while fetching dashboard data",
+            error: error.message,
+        });
+    }
+}
+
+
+export const addBankDetails = async (req, res) => {
+    try {
+        const vendor = req.vendor;
+        if (!vendor) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { bankName, accountName, accNumber } = req.body
+
+        // Update vendor bank details
+        const updatedVendor = await Vendor.findByIdAndUpdate(
+            vendor,
+            {
+                bankDetails: {
+                    bankName,
+                    accountName,
+                    accNummber: accNumber, // matches your schema spelling
+                },
+            },
+            { new: true }
+        );
+
+        if (!updatedVendor) {
+            return res.status(404).json({
+                success: false,
+                message: "Vendor not found",
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Bank details added successfully",
+            data: updatedVendor.bankDetails,
+        });
+    } catch (error) {
+        console.error("Error adding bank details:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error while adding bank details",
+            error: error.message,
+        });
     }
 };
