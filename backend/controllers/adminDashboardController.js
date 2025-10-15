@@ -6,7 +6,8 @@ import crypto from "crypto";
 import Token from "../models/tokenModel.js";
 import { sendInvitationEmail } from "../utils/emailSender.js";
 import bcrypt from "bcrypt";
-
+import fs from "fs";
+import { v2 as cloudinary } from 'cloudinary';
 
 
 
@@ -572,7 +573,6 @@ export const getBookingAnalytics = async (req, res) => {
 
 
 // inviteController.js
-
 export const inviteAdmin = async (req, res) => {
 
     const admin = req.admin;
@@ -759,7 +759,7 @@ export const setPassword = async (req, res) => {
         }
 
         // Update user password and set as verified
-        const admin = await Admin.findById(tokenDoc.userId).session(session);
+        const admin = await Admin.findById(tokenDoc.adminId).session(session);
         if (!admin) {
             await session.abortTransaction();
             session.endSession();
@@ -901,6 +901,7 @@ export const editUserRole = async (req, res) => {
 
         const adminDetails = await Admin.findById(inviterId)
         const inviterName = adminDetails.fullName;
+        const inviterRole = adminDetails.role;
 
         // Define role hierarchy (higher index = higher privilege)
         const roleHierarchy = {
@@ -952,7 +953,7 @@ export const editUserRole = async (req, res) => {
         }
 
         // Find the target user
-        const targetUser = await User.findById(adminId).session(session);
+        const targetUser = await Admin.findById(adminId).session(session);
         if (!targetUser) {
             await session.abortTransaction();
             session.endSession();
@@ -980,7 +981,7 @@ export const editUserRole = async (req, res) => {
         await targetUser.save({ session });
 
         // Log the role change (optional - you might want to create an audit log)
-        console.log(`Admin ${inviterId} changed role of user ${adminId} from ${targetUser.role} to ${newRole}`);
+        console.log(`Admin ${inviterName} changed role of user ${adminId} from ${targetUser.role} to ${newRole}`);
 
         await session.commitTransaction();
         session.endSession();
@@ -991,7 +992,6 @@ export const editUserRole = async (req, res) => {
             data: {
                 adminId: targetUser._id,
                 email: targetUser.email,
-                previousRole: targetUser.role,
                 newRole: newRole,
                 updatedAt: targetUser.updatedAt
             }
@@ -1019,3 +1019,130 @@ export const editUserRole = async (req, res) => {
 };
 
 
+export const fetchAllAdmins = async (req, res) => {
+    try {
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const admins = await Admin.find().select("-password -googleID");
+
+        res.status(200).json({
+            success: true,
+            message: "Admins fetched successfully",
+            admins
+        });
+
+    } catch (error) {
+        console.error("Error editing user role:", error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch admins",
+            error: error.message
+        });
+    }
+}
+
+
+export const editProfile = async (req, res) => {
+    try {
+
+        const { phoneNumber } = req.body;
+
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        if (phoneNumber && !/^\d{11}$/.test(phoneNumber)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Phone number must be exactly 11 digits",
+            });
+        }
+
+        let profile = await Admin.findById(admin);
+
+        if (phoneNumber !== undefined) {
+            profile.phone = phoneNumber;
+        }
+
+        // Handle profilePhoto upload if a file is provided
+        if (req.file) {
+
+            try {
+                // Delete old profilePhoto from Cloudinary if it exists
+                if (profile.profilePhoto && profile.profilePhoto.publicId) {
+                    await cloudinary.uploader.destroy(profile.profilePhoto.publicId);
+                }
+
+                // Upload new profilePhoto to Cloudinary
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "Meride Haven/profilePhoto",
+                    width: 500,
+                    height: 500,
+                    crop: "fill"
+                });
+
+                // Update profilePhoto in profile
+                profile.profilePhoto = {
+                    publicId: result.public_id,
+                    url: result.secure_url
+                };
+                // Delete the temporary file after successful upload
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+            } catch (uploadErr) {
+
+                // Clean up the file if upload fails
+                if (req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                return res.status(500).json({
+                    success: false,
+                    message: `Failed to upload image: ${uploadErr.message}`
+                });
+            }
+        };
+
+        // Save the updated profile
+        const updatedProfile = await profile.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Organization profile updated successfully",
+            data: {
+                fullName: updatedProfile.fullName,
+                profilePhoto: updatedProfile.profilePhoto,
+                phoneNumber: updatedProfile.phone,
+            }
+        });
+    } catch (error) {
+        console.error("Error updating organization profile:", error);
+
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: "Validation error",
+                errors
+            });
+        }
+
+
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating user profile",
+            error: error.message,
+        });
+    }
+};

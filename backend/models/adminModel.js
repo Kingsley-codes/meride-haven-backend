@@ -35,9 +35,6 @@ const adminSchema = new mongoose.Schema(
         password: {
             type: String,
             // Make password required only for non-Google signups
-            required: function () {
-                return !this.googleID; // Required if googleID is not present
-            },
             minlength: 8,
         },
         role: {
@@ -47,6 +44,10 @@ const adminSchema = new mongoose.Schema(
         status: {
             type: String,
             enum: ["invited", "active", "inactive"]
+        },
+        profilePhoto: {
+            publicId: { type: String },
+            url: { type: String }
         },
     },
     { timestamps: true }

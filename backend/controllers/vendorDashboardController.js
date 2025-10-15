@@ -2,6 +2,10 @@ import Booking from "../models/bookingModel.js";
 import Service from "../models/serviceModel.js";
 import Vendor from "../models/vendorModel.js";
 import mongoose from "mongoose";
+import fs from "fs";
+import { v2 as cloudinary } from 'cloudinary';
+
+
 
 export const fetchAllBookings = async (req, res) => {
     try {
@@ -445,7 +449,6 @@ export const editProfile = async (req, res) => {
                 address: updatedProfile.address,
                 profilePhoto: updatedProfile.profilePhoto,
                 phoneNumber: updatedProfile.phone,
-                gender: updatedProfile.gender,
             }
         });
     } catch (error) {
@@ -501,7 +504,7 @@ export const fetchVendorDashoboard = async (req, res) => {
 
         // --- 1. All-time total earnings (all completed bookings) ---
         const allTimeEarnings = await Booking.aggregate([
-            { $match: { vendor: new mongoose.Types.ObjectId(vendorID), status: "completed" } },
+            { $match: { vendor: new mongoose.Types.ObjectId(vendor), status: "completed" } },
             { $group: { _id: null, totalEarnings: { $sum: "$price" } } },
         ]);
 
@@ -551,7 +554,7 @@ export const addBankDetails = async (req, res) => {
                 bankDetails: {
                     bankName,
                     accountName,
-                    accNummber: accNumber, // matches your schema spelling
+                    accNumber, // matches your schema spelling
                 },
             },
             { new: true }

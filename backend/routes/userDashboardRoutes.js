@@ -24,7 +24,7 @@ userDashboardRouter.post("/bookings/complete", userAuthenticate, completeBooking
 userDashboardRouter.post("/bookings/rate", userAuthenticate, bookingRatingController);
 
 userDashboardRouter.get("/tickets", userAuthenticate, fetchAllTickets);
-userDashboardRouter.post("/tickets/create", userAuthenticate, createTicket);
+userDashboardRouter.post("/tickets/create", userAuthenticate, singleUpload.single("image"), createTicket);
 
 
 export default userDashboardRouter;

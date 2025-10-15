@@ -2,54 +2,10 @@ import Booking from "../models/bookingModel.js";
 import Service from "../models/serviceModel.js";
 import User from "../models/userModel.js";
 import Vendor from "../models/vendorModel.js";
-import { sendUserUpdateEmail } from "../utils/emailSender.js";
-import { UserVerificationCodes } from "../utils/verificationCodes.js";
 import fs from "fs";
 import { v2 as cloudinary } from 'cloudinary';
 import Ticket from "../models/ticketModel.js";
 
-
-
-
-// export const getUserActiveBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const activeBookings = await Booking.find({ user: userId, status: "in progress" });
-//         res.status(200).json(activeBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching active bookings", error });
-//     }
-// };
-
-// export const getUserCompletedBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const completedBookings = await Booking.find({ user: userId, status: "completed" });
-//         res.status(200).json(completedBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching completed bookings", error });
-//     }
-// };
-
-// export const getUserCancelledBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const cancelledBookings = await Booking.find({ user: userId, status: "cancelled" });
-//         res.status(200).json(cancelledBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching cancelled bookings", error });
-//     }
-// };
-
-// export const getUserConfirmedBookings = async (req, res) => {
-//     try {
-//         const userId = req.user._id;
-//         const cancelledBookings = await Booking.find({ user: userId, status: "future" });
-//         res.status(200).json(cancelledBookings);
-//     } catch (error) {
-//         res.status(500).json({ message: "Error fetching future bookings", error });
-//     }
-// };
 
 
 // Helper function to generate unique Booking IDs
@@ -487,12 +443,31 @@ export const createTicket = async (req, res) => {
 
         const { bookingID, conflict } = req.body;
 
-        const booking = await Booking.findOne({ bookingID: bookingID });
+        const booking = await Booking.findOne({
+            bookingID: bookingID,
+            client: user
+        });
+
+        const existingTicket = await Ticket.findOne({ bookingID })
+
+        if (existingTicket) {
+            return res.status(404).json({
+                success: false,
+                message: "Ticket already exists for this booking",
+            });
+        }
 
         if (!booking) {
             return res.status(404).json({
                 success: false,
                 message: "Booking not found",
+            });
+        }
+
+        if (booking.status === "completed") {
+            return res.status(404).json({
+                success: false,
+                message: "You cannot create ticket for a completed booking",
             });
         }
 
