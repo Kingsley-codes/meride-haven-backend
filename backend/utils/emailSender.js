@@ -696,8 +696,7 @@ export const sendInvitationEmail = async (email, token, inviterName, isResend = 
     subject,
     html: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="color: #007bff">
-                  <h3 class="logo">iDonatio</h3>
+                <div style="color: #DAA520">
                   <h2>You've Been Invited!</h2>
                 </div>
                 <p>Hello,</p>
@@ -706,7 +705,7 @@ export const sendInvitationEmail = async (email, token, inviterName, isResend = 
                 <p>Click the link below to set up your password and complete your registration.</p>
                 <p style="text-align: center; margin: 30px 0;">
                     <a href="${invitationLink}" 
-                       style="background-color: #007bff; color: white; padding: 12px 24px; 
+                       style="background-color: #DAA520; color: white; padding: 12px 24px; 
                               text-decoration: none; border-radius: 4px; font-weight: bold;">
                         Set Up Your Password
                     </a>

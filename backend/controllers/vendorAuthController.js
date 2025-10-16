@@ -276,7 +276,7 @@ export const login = async (req, res) => {
             } else {
                 return res.status(401).json({
                     status: "fail",
-                    message: "Account not authorizd to use this patform"
+                    message: "Account not authorized to use this patform"
                 });
             }
 
@@ -557,9 +557,9 @@ export const uploadKyc = async (req, res) => {
             });
         }
 
-        if (kycVendor.kycuploaded) {
+        if (kycVendor.kycuploaded && kycVendor.approvedStatus === 'approved') {
             return res.status(400).json({
-                error: "KYC already uploaded"
+                error: "KYC already approved"
             });
         }
 

@@ -476,7 +476,9 @@ export const editProfile = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
     try {
-        const profile = await Vendor.findById(req.user).select("-password -googleID");
+        const vendor = req.vendor
+        const profile = await Vendor.findById(vendor).select("-password -googleID");
+
 
         if (!profile) {
             return res.status(404).json({

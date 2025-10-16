@@ -245,6 +245,8 @@ export const bookingRatingController = async (req, res) => {
         // Save rating and review on the booking
         booking.rating = rating;
         booking.reviewDescription = reviewDescription;
+        booking.reviewDate = new Date();
+
         await booking.save();
 
         const serviceId = booking.service;
