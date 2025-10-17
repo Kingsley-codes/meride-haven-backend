@@ -12,6 +12,7 @@ import {
     googleAuthCallback,
     uploadKyc,
     driverKyc,
+    registerDriver,
 } from "../controllers/vendorAuthController.js";
 import multer from "multer";
 import { uploadDriverImages } from "../middleware/uploadMiddleware.js";
@@ -27,6 +28,7 @@ const upload = multer({ storage: multer.memoryStorage() }); // Use memory storag
 // Registration routes
 
 vendorAuthRouter.post("/register", registerVendor); // Step 2: Register vendor with form data
+vendorAuthRouter.post("/driver", registerDriver); // Step 2: Register vendor with form data
 
 vendorAuthRouter.post("/verify", verifyVendor); // Step 3: Verify vendor with code
 

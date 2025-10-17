@@ -7,6 +7,7 @@ import validator from 'validator';
 import { v2 as cloudinary } from "cloudinary";
 import passport from 'passport';
 import streamifier from "streamifier";
+import fs from "fs";
 
 
 
@@ -589,11 +590,102 @@ export const uploadKyc = async (req, res) => {
 };
 
 
+// Driver Registration
+export const registerDriver = async (req, res) => {
+    try {
+        const { vendorName, email, password, confirmPassword, state, phone } = req.body;
+
+        // Validations
+        if (!vendorName || typeof vendorName !== 'string') {
+            return res.status(400).json({
+                status: "fail",
+                message: "Business name must must exist and must be a string"
+            });
+        }
+
+        if (!state) {
+            return res.status(400).json({
+                status: "fail",
+                message: "You must add your state"
+            });
+        }
+
+        if (!phone || !/^\d{11}$/.test(phone)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Phone number must be exactly 11 digits"
+            });
+        }
+
+        if (!validator.isEmail(email)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Invalid email format"
+            });
+        }
+
+        if (!validator.isStrongPassword(password, {
+            minLength: 8,
+            minUppercase: 1,
+            minSymbols: 1,
+            minNumbers: 1
+        })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Password must be at least 8 characters and include an uppercase letter, number, and symbol"
+            });
+        }
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Passwords don't match"
+            });
+        }
+
+        if (await Vendor.findOne({ email })) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Email already in use"
+            });
+        }
+
+        await Vendor.create({
+            vendorName,
+            email,
+            phone,
+            VendorType: "driver",
+            carDetails: {
+                state
+            },
+            password: await bcrypt.hash(password, 12),
+            isVerified: true
+        });
+
+        const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
+        await sendVendorVerificationEmail(email, verificationCode, false);
+
+        res.status(200).json({
+            status: "success",
+            message: "Verification code sent",
+        });
+
+    } catch (err) {
+        res.status(500).json({
+            status: "error",
+            message: "Registration failed",
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
+    }
+};
+
+
 export const driverKyc = async (req, res) => {
     let filesToCleanup = []; // Track files for cleanup
 
     try {
-        const { vendorId, vehicleOwner, availability, period, experience, vehicleDetails } = req.body;
+        const { vendorId, vehicleOwner, availability, price, experience, vehicleDetails } = req.body;
 
         if (!req.files || !req.files.passport || !req.files.license || !req.files.address) {
             return res.status(400).json({
@@ -601,21 +693,14 @@ export const driverKyc = async (req, res) => {
             });
         }
 
-        if (!availability || (availability !== 'full-time' && availability !== 'part-time')) {
-            return res.status(400).json({
-                error: "Invalid availability status"
-            });
-        }
-
-        if (availability === 'part-time' && !period) {
-            return res.status(400).json({
-                error: "Period is required for part-time availability"
-            });
-        }
-
         if (!experience || experience < 0) {
             return res.status(400).json({
                 error: "Invalid experience"
+            });
+        }
+        if (!price || price < 0) {
+            return res.status(400).json({
+                error: "Invalid price"
             });
         }
 
@@ -657,13 +742,13 @@ export const driverKyc = async (req, res) => {
         );
 
         const driverVendor = await Vendor.findOneAndUpdate(
-            vendorId,
+            { _id: vendorId },
             {
                 carDetails: {
                     vehicleOwner,
                     availability,
-                    period,
                     experience,
+                    price,
                     vehicleDetails,
                     passport: {
                         publicId: passportResult.public_id,
@@ -679,7 +764,6 @@ export const driverKyc = async (req, res) => {
                     }
                 },
                 kycuploaded: true,
-                VendorType: 'driver'
             },
             { new: true }
         );

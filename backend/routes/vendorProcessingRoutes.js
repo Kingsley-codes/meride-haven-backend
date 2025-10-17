@@ -1,5 +1,15 @@
 import express from "express";
-import { activateVendor, approveService, approveVendor, declineService, fetchAllServices, fetchAllVendors, rejectVendor, suspendVendor } from "../controllers/vendorprocessingController.js";
+import {
+    activateVendor,
+    approveService,
+    approveVendor,
+    declineService,
+    fetchAllDrivers,
+    fetchAllServices,
+    fetchAllVendors,
+    rejectVendor,
+    suspendVendor
+} from "../controllers/vendorprocessingController.js";
 import { adminAuthenticate } from "../middleware/authenticationMiddleware.js";
 
 
@@ -9,6 +19,7 @@ const vendorProcessingRouter = express.Router();
 // Vendor processing routes
 
 vendorProcessingRouter.get("/", adminAuthenticate, fetchAllVendors);
+vendorProcessingRouter.get("/drivers", adminAuthenticate, fetchAllDrivers);
 vendorProcessingRouter.post("/approve", adminAuthenticate, approveVendor);
 vendorProcessingRouter.post("/reject", adminAuthenticate, rejectVendor);
 vendorProcessingRouter.post("/suspend", adminAuthenticate, suspendVendor);

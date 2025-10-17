@@ -58,13 +58,17 @@ export const fetchAllVendors = async (req, res) => {
             });
         }
 
-        const { q, status } = req.query;
+        const { q, status, approvedStatus } = req.query;
 
         // FILTERS
         const filter = {};
 
         if (status && ["active", "suspended"].includes(status)) {
             filter.status = status;
+        }
+
+        if (approvedStatus && ['pending', 'approved', 'rejected'].includes(approvedStatus)) {
+            filter.approvedStatus = approvedStatus;
         }
 
         if (q) {
@@ -156,6 +160,123 @@ export const fetchAllVendors = async (req, res) => {
         res.status(500).json({ success: false, message: "Server Error", error: error.message });
     }
 };
+
+
+export const fetchAllDrivers = async (req, res) => {
+    try {
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { q, status, approvedStatus } = req.query;
+
+        // --- FILTERS ---
+        const filter = { VendorType: "driver" };
+
+        if (status && ["active", "suspended"].includes(status)) {
+            filter.status = status;
+        }
+
+        if (approvedStatus && ["pending", "approved", "rejected"].includes(approvedStatus)) {
+            filter.approvedStatus = approvedStatus;
+        }
+
+        if (q) {
+            filter.$or = [
+                { email: { $regex: q, $options: "i" } },
+                { vendorName: { $regex: q, $options: "i" } },
+                { businessName: { $regex: q, $options: "i" } },
+            ];
+        }
+
+        // --- Overview Stats ---
+        const now = new Date();
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+        // Current month counts
+        const totalDrivers = await Vendor.countDocuments({ VendorType: "driver" });
+        const activeDrivers = await Vendor.countDocuments({ VendorType: "driver", status: "active" });
+        const suspendedDrivers = await Vendor.countDocuments({ VendorType: "driver", status: "suspended" });
+
+        // Last month counts
+        const lastMonthTotal = await Vendor.countDocuments({
+            VendorType: "driver",
+            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        });
+
+        const lastMonthActive = await Vendor.countDocuments({
+            VendorType: "driver",
+            status: "active",
+            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        });
+
+        const lastMonthSuspended = await Vendor.countDocuments({
+            VendorType: "driver",
+            status: "suspended",
+            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        });
+
+        // --- Helper for percentage change ---
+        const getPercentageChange = (current, previous) => {
+            if (previous === 0 && current === 0) return 0;
+            if (previous === 0) return 100;
+            return (((current - previous) / previous) * 100).toFixed(1);
+        };
+
+        const totalChange = getPercentageChange(totalDrivers, lastMonthTotal);
+        const activeChange = getPercentageChange(activeDrivers, lastMonthActive);
+        const suspendedChange = getPercentageChange(suspendedDrivers, lastMonthSuspended);
+
+        // --- Pagination ---
+        const totalFiltered = await Vendor.countDocuments(filter);
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const allDrivers = await Vendor.find({
+            ...filter,
+            kycuploaded: true,
+        })
+            .select("-password -googleID")
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+        res.status(200).json({
+            success: true,
+            overview: {
+                totalDrivers,
+                activeDrivers,
+                suspendedDrivers,
+                changes: {
+                    totalChange: `${totalChange}%`,
+                    activeChange: `${activeChange}%`,
+                    suspendedChange: `${suspendedChange}%`,
+                },
+            },
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalFiltered / limit),
+                perPage: limit,
+            },
+            data: allDrivers,
+        });
+    } catch (error) {
+        console.error("Error fetching drivers:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
+    }
+};
+
 
 
 export const approveVendor = async (req, res) => {
