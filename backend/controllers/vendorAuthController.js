@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import Vendor from '../models/vendorModel.js';
 import { CodeTypes, VendorVerificationCodes } from '../utils/verificationCodes.js';
-// import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
+import { sendVendorPasswordResetEmail, sendVendorVerificationEmail } from '../utils/emailSender.js';
 import jwt from "jsonwebtoken";
 import validator from 'validator';
 import { v2 as cloudinary } from "cloudinary";
@@ -589,3 +589,138 @@ export const uploadKyc = async (req, res) => {
 };
 
 
+export const driverKyc = async (req, res) => {
+    let filesToCleanup = []; // Track files for cleanup
+
+    try {
+        const { vendorId, vehicleOwner, availability, period, experience, vehicleDetails } = req.body;
+
+        if (!req.files || !req.files.passport || !req.files.license || !req.files.address) {
+            return res.status(400).json({
+                error: "All documents are required"
+            });
+        }
+
+        if (!availability || (availability !== 'full-time' && availability !== 'part-time')) {
+            return res.status(400).json({
+                error: "Invalid availability status"
+            });
+        }
+
+        if (availability === 'part-time' && !period) {
+            return res.status(400).json({
+                error: "Period is required for part-time availability"
+            });
+        }
+
+        if (!experience || experience < 0) {
+            return res.status(400).json({
+                error: "Invalid experience"
+            });
+        }
+
+        if (!vehicleOwner || (vehicleOwner && !vehicleDetails)) {
+            return res.status(400).json({
+                error: "Invalid vehicle ownership details"
+            });
+        }
+
+        const passportFile = req.files.passport[0];
+        const licenseFile = req.files.license[0];
+        const addressFile = req.files.address[0];
+
+
+        if (passportFile) {
+            filesToCleanup.push(passportFile);
+        }
+
+        if (licenseFile) {
+            filesToCleanup.push(licenseFile);
+        }
+
+        if (addressFile) {
+            filesToCleanup.push(addressFile);
+        }
+
+        // Upload each document to Cloudinary
+        const passportResult = await cloudinary.uploader.upload(
+            passportFile.path,
+            { folder: "Meride Haven/kyc" }
+        );
+        const licenseResult = await cloudinary.uploader.upload(
+            licenseFile.path,
+            { folder: "Meride Haven/kyc" }
+        );
+        const addressResult = await cloudinary.uploader.upload(
+            addressFile.path,
+            { folder: "Meride Haven/kyc" }
+        );
+
+        const driverVendor = await Vendor.findOneAndUpdate(
+            vendorId,
+            {
+                carDetails: {
+                    vehicleOwner,
+                    availability,
+                    period,
+                    experience,
+                    vehicleDetails,
+                    passport: {
+                        publicId: passportResult.public_id,
+                        url: passportResult.secure_url
+                    },
+                    license: {
+                        publicId: licenseResult.public_id,
+                        url: licenseResult.secure_url
+                    },
+                    address: {
+                        publicId: addressResult.public_id,
+                        url: addressResult.secure_url
+                    }
+                },
+                kycuploaded: true,
+                VendorType: 'driver'
+            },
+            { new: true }
+        );
+
+        // Delete file immediately after upload
+        if (fs.existsSync(passportFile.path)) {
+            fs.unlinkSync(passportFile.path);
+        }
+
+        if (fs.existsSync(licenseFile.path)) {
+            fs.unlinkSync(licenseFile.path);
+        }
+
+        if (fs.existsSync(addressFile.path)) {
+            fs.unlinkSync(addressFile.path);
+        }
+
+        if (!driverVendor) {
+            return res.status(404).json({
+                error: "Vendor not found"
+            });
+        }
+
+        return res.status(201).json({
+            message: "Driver KYC submitted successfully"
+        });
+    } catch (error) {
+        // Cleanup any remaining files on error
+        filesToCleanup.forEach(file => {
+            if (file.path && fs.existsSync(file.path)) {
+                try {
+                    fs.unlinkSync(file.path);
+                } catch (unlinkError) {
+                    console.error('Error deleting file:', unlinkError);
+                }
+            }
+        });
+
+        res.status(500).json({
+            message: "Error creating service",
+            error: error.message
+        });
+    }
+};

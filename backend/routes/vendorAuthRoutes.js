@@ -11,20 +11,11 @@ import {
     handleGoogleLogin,
     googleAuthCallback,
     uploadKyc,
+    driverKyc,
 } from "../controllers/vendorAuthController.js";
 import multer from "multer";
 import { uploadDriverImages } from "../middleware/uploadMiddleware.js";
-import {
-    driverKyc,
-    driverLogin,
-    registerDriver,
-    requestDriverPasswordReset,
-    resendDriverResetCode,
-    resendDriverVerificationCode,
-    resetDriverPassword,
-    verifyDriver,
-    verifyDriverResetCode
-} from "../controllers/driverAuthController.js";
+
 
 
 const vendorAuthRouter = express.Router();
@@ -73,26 +64,6 @@ vendorAuthRouter.post(
 )
 
 
-// Driver registration routes
-vendorAuthRouter.post("/driver", registerDriver); // Step 2: Register driver with form data
-
-vendorAuthRouter.post("/driver/verify", verifyDriver); // Step 3: Verify driver with code
-
-vendorAuthRouter.post("/driver/resend-verification", resendDriverVerificationCode); // Resend verification code
-
-
-// Login route 
-vendorAuthRouter.post("/driver/login", driverLogin);
-
-
-// Password reset routes
-vendorAuthRouter.post("/driver/forgot-password", requestDriverPasswordReset); // Stage 1
-
-vendorAuthRouter.post("/driver/verify-reset-code", verifyDriverResetCode);   // Stage 2
-
-vendorAuthRouter.post("/driver/reset-password", resetDriverPassword);        // Stage 3
-
-vendorAuthRouter.post("/driver/resend-reset-code", resendDriverResetCode);   // Resend code
 
 vendorAuthRouter.post("/driverkyc", uploadDriverImages, driverKyc); // Step 3: Verify vendor with code
 

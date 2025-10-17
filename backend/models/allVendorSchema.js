@@ -14,3 +14,44 @@ export const bankSchema = new mongoose.Schema({
         required: true
     }
 })
+
+export const driverSchema = new mongoose.Schema({
+    availability: {
+        type: String,
+        enum: ['full-time', 'part-time'],
+    },
+    period: {
+        type: String,
+        required: function () {
+            return this.availability === 'part-time'; // Required if availability is part-time
+        },
+    },
+    city: {
+        type: String,
+        required: true
+    },
+    experience: {
+        type: Number,
+    },
+    vehicleOwner: {
+        type: Boolean,
+    },
+    vehicleDetails: {
+        type: String,
+        required: function () {
+            return this.vehicleOwner; // Required if vehicleOwner is true
+        },
+    },
+    passport: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+    license: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+    address: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+});

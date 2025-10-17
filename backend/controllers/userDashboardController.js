@@ -514,9 +514,11 @@ export const createTicket = async (req, res) => {
         const ticket = await Ticket.create({
             client: booking.client,
             clientName: booking.clientName,
+            clientPhone: booking.clientNumber,
             service: booking.service,
             serviceName: booking.serviceName,
             vendor: booking.vendor,
+            vendorPhone: serviceVendor.phone,
             serviceType: booking.serviceType,
             bookingID: booking.bookingID,
             ticketID: generateTicketID(),

@@ -1,6 +1,5 @@
 import Service from "../models/serviceModel.js";
 import Vendor from "../models/vendorModel.js";
-import Driver from "../models/driverModel.js";
 
 
 
@@ -173,8 +172,7 @@ export const approveVendor = async (req, res) => {
         const { vendorId } = req.body;
         // Try to find vendor in Vendor or Driver collections
         let vendor =
-            (await Vendor.findById(vendorId).select("-password -googleID")) ||
-            (await Driver.findById(vendorId).select("-password -googleID"));
+            (await Vendor.findById(vendorId).select("-password -googleID"));
 
         if (!vendor) {
             return res.status(404).json({
@@ -242,8 +240,7 @@ export const suspendVendor = async (req, res) => {
         }
 
         let vendor =
-            (await Vendor.findById(vendorId).select("-password -googleID")) ||
-            (await Driver.findById(vendorId).select("-password -googleID"));
+            (await Vendor.findById(vendorId).select("-password -googleID"));
 
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
@@ -271,9 +268,7 @@ export const activateVendor = async (req, res) => {
         }
 
         let vendor =
-            (await Vendor.findById(vendorId).select("-password -googleID")) ||
-            (await Driver.findById(vendorId).select("-password -googleID"));
-
+            (await Vendor.findById(vendorId).select("-password -googleID"));
         if (!vendor) {
             return res.status(404).json({ success: false, message: "Vendor not found" });
         }
@@ -300,8 +295,6 @@ export const fetchAllServices = async (req, res) => {
         const {
             approvedStatus,
             servicetype,
-            startDate,
-            endDate,
         } = req.query;
 
         // Build filter object
@@ -317,27 +310,35 @@ export const fetchAllServices = async (req, res) => {
             filter.serviceType = servicetype;
         }
 
-        // Filter by date range
-        if (startDate || endDate) {
-            filter.createdAt = {};
-            if (startDate) {
-                filter.createdAt.$gte = new Date(startDate);
-            }
-            if (endDate) {
-                filter.createdAt.$lte = new Date(endDate);
-            }
-        }
+        // --- Pagination ---
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const totalBookings = await Booking.countDocuments(filter);
 
         // Fetch services with applied filters
-        const services = await Service.find(filter).sort({ createdAt: -1 });
+        const services = await Service.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
         // Prepare response data
-        const responseData = { success: true, data: services };
+        const responseData = { data: services };
 
         const overviewStats = await calculateOverviewStats();
         responseData.overview = overviewStats;
 
-        res.status(200).json(responseData);
+        res.status(200).json({
+            success: true,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalBookings / limit),
+                perPage: limit,
+            },
+            responseData
+        });
     } catch (error) {
         res.status(500).json({ success: false, message: "Server Error" });
     }

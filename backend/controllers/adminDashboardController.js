@@ -46,6 +46,14 @@ export const fetchAllBookings = async (req, res) => {
             if (endDate) filter.createdAt.$lte = new Date(endDate);
         }
 
+
+        // --- Pagination ---
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const totalBookings = await Booking.countDocuments(filter);
+
         // FETCH BOOKINGS + VENDOR NAME
         const bookings = await Booking.find(filter)
             .sort({ createdAt: -1 })
@@ -53,6 +61,8 @@ export const fetchAllBookings = async (req, res) => {
                 path: "vendor",
                 select: "vendorName, bankDetails",
             })
+            .skip(skip)
+            .limit(limit)
             .lean();
 
         // 🔹 OVERVIEW STATS (Month-to-Month)
@@ -169,7 +179,12 @@ export const fetchAllBookings = async (req, res) => {
             success: true,
             message: "Bookings fetched successfully",
             overview,
-            totalFiltered: bookings.length,
+            totalFiltered: totalBookings,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalBookings / limit),
+                perPage: limit,
+            },
             bookings,
         });
     } catch (error) {
@@ -1144,5 +1159,25 @@ export const editProfile = async (req, res) => {
             message: "Server error while updating user profile",
             error: error.message,
         });
+    }
+};
+
+
+export const getUserProfile = async (req, res) => {
+    try {
+        const admin = req.admin
+        const profile = await Admin.findById(admin).select("-password -googleID");
+
+
+        if (!profile) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.json(profile);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 };

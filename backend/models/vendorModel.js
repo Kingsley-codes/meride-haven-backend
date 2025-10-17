@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import validator from "validator";
-import { bankSchema } from "./allVendorSchema.js";
+import { bankSchema, driverSchema } from "./allVendorSchema.js";
 
 
 const vendorSchema = new mongoose.Schema({
@@ -58,6 +58,14 @@ const vendorSchema = new mongoose.Schema({
         type: String,
         enum: ['active', 'suspended'],
         default: 'active'
+    },
+    VendorType: {
+        type: String,
+        enum: ['driver', 'others'],
+        default: 'others'
+    },
+    carDetails: {
+        type: driverSchema
     },
     declineReason: {
         type: String

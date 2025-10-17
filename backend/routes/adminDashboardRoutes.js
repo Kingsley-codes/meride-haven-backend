@@ -8,6 +8,7 @@ import {
     fetchAllClients,
     fetchSingleClient,
     getBookingAnalytics,
+    getUserProfile,
     inviteAdmin,
     resendInvitation,
     setPassword,
@@ -33,6 +34,8 @@ adminDashboardRouter.post("/password", setPassword);
 adminDashboardRouter.post("/resend", adminAuthenticate, resendInvitation);
 adminDashboardRouter.patch("/edit", adminAuthenticate, editUserRole);
 adminDashboardRouter.patch("/profile/edit", adminAuthenticate, singleUpload.single("profilePhoto"), editProfile);
+adminDashboardRouter.get("/profile", adminAuthenticate, getUserProfile);
+
 
 
 

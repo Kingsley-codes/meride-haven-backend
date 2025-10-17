@@ -183,7 +183,7 @@ export const createService = async (req, res) => {
             vendorName: vendor.businessName,
             vendorID,
             location,
-            description, 
+            description,
             availability,
             image1: image1 ? image1Result : undefined,
             image2: image2 ? image2Result : undefined,
@@ -261,7 +261,25 @@ export const getVendorServices = async (req, res) => {
                 message: "You are not authorized to view services for this vendor"
             });
         }
-        const services = await Service.find({ vendorID: vendorID });
+
+        const { servicetype, status } = req.query;
+
+        // Base filter (no vendor yet)
+        const filter = {};
+
+        if (servicetype && ["security", "apartment", "car rental", "event", "cruise"].includes(servicetype)) {
+            filter.serviceType = servicetype;
+        }
+
+        if (status && ['active', 'inactive'].includes(status)) {
+            filter.status = status;
+        }
+
+
+        const services = await Service.find({
+            ...filter,
+            vendorID: vendorID
+        });
         res.status(200).json({ services });
     } catch (error) {
         res.status(500).json({

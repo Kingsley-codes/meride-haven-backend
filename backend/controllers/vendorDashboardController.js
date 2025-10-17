@@ -33,6 +33,7 @@ export const fetchAllBookings = async (req, res) => {
         if (q) {
             filter.$or = [
                 { clientNumber: { $regex: q, $options: "i" } },
+                { clientName: { $regex: q, $options: "i" } },
             ];
         }
 
@@ -42,15 +43,33 @@ export const fetchAllBookings = async (req, res) => {
             if (endDate) filter.createdAt.$lte = new Date(endDate);
         }
 
+        // --- Pagination ---
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const skip = (page - 1) * limit;
+
+        const totalBookings = await Booking.countDocuments({
+            ...filter,
+            vendor: vendor
+        });
+
         const bookings = await Booking.find({
             ...filter,
             vendor: vendor,
-        }).sort({ createdAt: -1 });
+        }).sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
         return res.status(200).json({
             success: true,
             message: "Bookings fetched successfully",
             bookings,
+            pagination: {
+                currentPage: page,
+                totalPages: Math.ceil(totalBookings / limit),
+                perPage: limit,
+            },
         });
     } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -297,15 +316,35 @@ export const fetchReviews = async (req, res) => {
 
 export const getVendorEarnings = async (req, res) => {
     try {
-        const vendor = req.vendor;
-        if (!vendor) {
+        const vendorID = req.vendor;
+        if (!vendorID) {
             return res.status(403).json({
                 success: false,
                 message: "You are Unauthorized",
             });
         }
 
-        const vendorID = vendor._id;
+        const { servicetype, q, startDate, endDate } = req.query;
+
+        // Base filter (no vendor yet)
+        const filter = {};
+
+        if (servicetype && ["security", "apartment", "car rental", "event", "cruise"].includes(servicetype)) {
+            filter.serviceType = servicetype;
+        }
+
+        if (q) {
+            filter.$or = [
+                { bookingID: { $regex: q, $options: "i" } },
+            ];
+        }
+
+        if (startDate || endDate) {
+            filter.createdAt = {};
+            if (startDate) filter.createdAt.$gte = new Date(startDate);
+            if (endDate) filter.createdAt.$lte = new Date(endDate);
+        }
+
 
         // --- 1. All-time total earnings (all completed bookings) ---
         const allTimeEarnings = await Booking.aggregate([
@@ -329,7 +368,10 @@ export const getVendorEarnings = async (req, res) => {
             { $group: { _id: null, totalEarnings: { $sum: "$price" } } },
         ]);
 
-        const totalBookings = await Booking.countDocuments({ vendor: vendor });
+        const totalBookings = await Booking.countDocuments({
+            ...filter,
+            vendor: vendorID
+        });
 
         // --- Pagination ---
         const page = parseInt(req.query.page) || 1;
@@ -337,7 +379,8 @@ export const getVendorEarnings = async (req, res) => {
         const skip = (page - 1) * limit;
 
         const bookings = await Booking.find({
-            vendor: vendor,
+            ...filter,
+            vendor: vendorID,
         }).sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)

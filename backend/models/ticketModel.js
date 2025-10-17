@@ -19,6 +19,14 @@ const ticketSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Vendor",
         },
+        vendorPhone: {
+            type: String,
+            required: true,
+        },
+        clientPhone: {
+            type: String,
+            required: true,
+        },
         serviceType: {
             type: String,
             required: true,
@@ -39,7 +47,7 @@ const ticketSchema = new mongoose.Schema(
         },
         status: {
             type: String,
-            enum: ["in progress", "opened", "resolved"],
+            enum: ["ongoing", "opened", "resolved"],
             default: "opened",
         },
         conflict: {

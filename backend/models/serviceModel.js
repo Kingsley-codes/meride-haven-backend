@@ -95,6 +95,11 @@ const serviceSchema = new mongoose.Schema({
         publicId: { type: String },
         url: { type: String }
     },
+    status: {
+        type: String,
+        enum: ['active', 'inactive'],
+        default: 'active'
+    },
     approvedStatus: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],

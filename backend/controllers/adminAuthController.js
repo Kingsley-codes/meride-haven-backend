@@ -5,6 +5,7 @@ import { UserVerificationCodes, CodeTypes } from "../utils/verificationCodes.js"
 import bcrypt from "bcrypt";
 import validator from "validator";
 import jwt from "jsonwebtoken";
+import { sendAdminPasswordResetEmail } from "../utils/emailSender.js";
 
 
 
@@ -83,7 +84,7 @@ export const requestPasswordReset = async (req, res) => {
         }
 
         const code = UserVerificationCodes.generateResetCode(email);
-        await sendUserPasswordResetEmail(email, code);
+        await sendAdminPasswordResetEmail(email, code);
 
         res.status(200).json({
             status: "success",
@@ -224,7 +225,7 @@ export const resendResetCode = async (req, res) => {
         }
         const newCode = UserVerificationCodes.resendResetCode(email);
 
-        await sendUserPasswordResetEmail(email, newCode);
+        await sendAdminPasswordResetEmail(email, newCode);
 
         res.status(200).json({
             status: "success",
