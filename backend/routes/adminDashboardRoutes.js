@@ -15,7 +15,7 @@ import {
     suspendClient
 } from "../controllers/adminDashboardController.js";
 import { adminAuthenticate } from "../middleware/authenticationMiddleware.js";
-import { singleUpload } from "../middleware/uploadMiddleware.js";
+import { upload } from "../middleware/uploadMiddleware.js";
 
 
 
@@ -33,7 +33,7 @@ adminDashboardRouter.post("/invite", adminAuthenticate, inviteAdmin);
 adminDashboardRouter.post("/password", setPassword);
 adminDashboardRouter.post("/resend", adminAuthenticate, resendInvitation);
 adminDashboardRouter.patch("/edit", adminAuthenticate, editUserRole);
-adminDashboardRouter.patch("/profile/edit", adminAuthenticate, singleUpload.single("profilePhoto"), editProfile);
+adminDashboardRouter.patch("/profile/edit", adminAuthenticate, upload.single("profilePhoto"), editProfile);
 adminDashboardRouter.get("/profile", adminAuthenticate, getUserProfile);
 
 

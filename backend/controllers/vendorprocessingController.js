@@ -436,7 +436,7 @@ export const fetchAllServices = async (req, res) => {
         const limit = 10;
         const skip = (page - 1) * limit;
 
-        const totalBookings = await Booking.countDocuments(filter);
+        const totalService = await Service.countDocuments(filter);
 
         // Fetch services with applied filters
         const services = await Service.find(filter)
@@ -455,14 +455,20 @@ export const fetchAllServices = async (req, res) => {
             success: true,
             pagination: {
                 currentPage: page,
-                totalPages: Math.ceil(totalBookings / limit),
+                totalPages: Math.ceil(totalService / limit),
                 perPage: limit,
             },
             responseData
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error" });
+        console.error("Error fetching services:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server Error",
+            error: error.message,
+        });
     }
+
 };
 
 

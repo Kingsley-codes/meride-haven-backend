@@ -12,7 +12,7 @@ import {
     rejectBooking
 } from "../controllers/vendorDashboardController.js";
 import { vendorAuthenticate } from "../middleware/authenticationMiddleware.js";
-import { singleUpload } from '../middleware/uploadMiddleware.js';
+import { upload } from '../middleware/uploadMiddleware.js';
 
 
 
@@ -30,7 +30,7 @@ vendorDashboardRouter.post("/bank", vendorAuthenticate, addBankDetails);
 
 
 vendorDashboardRouter.get("/profile", vendorAuthenticate, getUserProfile);
-vendorDashboardRouter.patch("/profile/edit", vendorAuthenticate, singleUpload.single("profilePhoto"), editProfile);
+vendorDashboardRouter.patch("/profile/edit", vendorAuthenticate, upload.single("profilePhoto"), editProfile);
 
 
 export default vendorDashboardRouter;

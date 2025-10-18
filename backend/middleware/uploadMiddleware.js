@@ -1,21 +1,49 @@
 import multer from 'multer';
-import path from "path";
+import fs from "fs";
+
+
+// SETUP: Ensure upload folder exists
+const uploadDir = "uploads/";
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+
+// ALLOWED MIME TYPES
+const allowedMimeTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
+
+
+// COMMON FILE FILTER
+const fileFilter = (req, file, cb) => {
+    if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error("Invalid file type. Only JPG, PNG, JPEG, and WEBP images are allowed."), false);
+    }
+};
+
+
+// COMMON STORAGE ENGINE
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const safeName = file.originalname
+            .toLowerCase()
+            .replace(/\s+/g, "-")
+            .replace(/[^a-z0-9.-]/g, "");
+        cb(null, `${uniqueSuffix}-${safeName}`);
+    },
+});
 
 
 // Simple multer configuration
-const upload = multer({
-    dest: "uploads/",
-    limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
-        files: 4 // Max 4 files total
-    },
-    fileFilter: function (req, file, cb) {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed!'), false);
-        }
-    }
+export const upload = multer({
+    storage,
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter,
 });
 
 export const uploadServiceImages = upload.fields([
@@ -33,22 +61,4 @@ export const uploadDriverImages = upload.fields([
 
 
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, "uploads/"),
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname));
-    },
-});
-
-export const singleUpload = multer({
-    storage,
-    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
-    fileFilter: (req, file, cb) => {
-        const allowed = /jpeg|jpg|png/;
-        const ext = allowed.test(path.extname(file.originalname).toLowerCase());
-        const mime = allowed.test(file.mimetype);
-        if (ext && mime) cb(null, true);
-        else cb(new Error("Only .jpeg, .jpg, and .png files are allowed"));
-    },
-});
 

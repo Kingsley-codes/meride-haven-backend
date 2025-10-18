@@ -473,41 +473,44 @@ export const createTicket = async (req, res) => {
             });
         }
 
-        let ticketImage = {}
+        let ticketImages = [];
 
-        // Handle profilePhoto upload if a file is provided
-        if (req.file) {
-
+        // Handle multiple image uploads (if files are provided)
+        if (req.files && req.files.length > 0) {
             try {
-                // Upload new profilePhoto to Cloudinary
-                const result = await cloudinary.uploader.upload(req.file.path, {
-                    folder: "Meride Haven/ticketPhoto",
-                    width: 500,
-                    height: 500,
-                    crop: "fill"
+                const uploadPromises = req.files.map(async (file) => {
+                    const result = await cloudinary.uploader.upload(file.path, {
+                        folder: "Meride Haven/ticketPhotos",
+                        width: 500,
+                        height: 500,
+                        crop: "fill",
+                    });
+
+                    // Clean up temp file
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
+                    }
+
+                    return {
+                        publicId: result.public_id,
+                        url: result.secure_url,
+                    };
                 });
 
-                // Update profilePhoto in profile
-                ticketImage = {
-                    publicId: result.public_id,
-                    url: result.secure_url
-                };
-                // Delete the temporary file after successful upload
-                if (fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                }
+                ticketImages = await Promise.all(uploadPromises);
             } catch (uploadErr) {
-
-                // Clean up the file if upload fails
-                if (req.file.path && fs.existsSync(req.file.path)) {
-                    fs.unlinkSync(req.file.path);
-                }
+                // Clean up any uploaded files in case of partial failure
+                req.files.forEach((file) => {
+                    if (fs.existsSync(file.path)) {
+                        fs.unlinkSync(file.path);
+                    }
+                });
                 return res.status(500).json({
                     success: false,
-                    message: `Failed to upload image: ${uploadErr.message}`
+                    message: `Failed to upload images: ${uploadErr.message}`,
                 });
             }
-        };
+        }
 
         const serviceVendor = await Vendor.findById(booking.vendor).select("businessName")
 
@@ -523,7 +526,7 @@ export const createTicket = async (req, res) => {
             bookingID: booking.bookingID,
             ticketID: generateTicketID(),
             conflict,
-            image: ticketImage,
+            images: ticketImages,
             vendorName: serviceVendor.businessName
         })
 

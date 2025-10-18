@@ -54,10 +54,12 @@ const ticketSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        image: {
-            publicId: { type: String },
-            url: { type: String }
-        },
+        images: [
+            {
+                publicId: { type: String },
+                url: { type: String }
+            },
+        ]
     },
     { timestamps: true }
 );

@@ -1,5 +1,6 @@
 import Booking from "../models/bookingModel.js";
 import User from "../models/userModel.js";
+import { sendBookingEmailToClient, sendBookingEmailToVendor } from "./bookingEmailHelpers.js";
 
 
 //  Handle successful payment and activate booking
@@ -35,7 +36,8 @@ export const handleSuccessfulPayment = async (eventData) => {
         client.lastBooking = new Date();
         await client.save();
 
-
+        await sendBookingEmailToClient(booking.bookingID);
+        await sendBookingEmailToVendor(booking.bookingID);
         return booking;
     } catch (error) {
         console.log(error);

@@ -626,3 +626,108 @@ export const addBankDetails = async (req, res) => {
         });
     }
 };
+
+
+export const editDriverProfile = async (req, res) => {
+    try {
+
+        const { address, phoneNumber } = req.body;
+
+        const vendor = req.vendor;
+        if (!vendor) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        if (phoneNumber && !/^\d{11}$/.test(phoneNumber)) {
+            return res.status(400).json({
+                status: "fail",
+                message: "Phone number must be exactly 11 digits",
+            });
+        }
+
+        let profile = await Vendor.findById(vendor);
+
+        if (address !== undefined) {
+            profile.address = address;
+        }
+
+        if (phoneNumber !== undefined) {
+            profile.phone = phoneNumber;
+        }
+
+        // Handle profilePhoto upload if a file is provided
+        if (req.file) {
+
+            try {
+                // Delete old profilePhoto from Cloudinary if it exists
+                if (profile.profilePhoto && profile.profilePhoto.publicId) {
+                    await cloudinary.uploader.destroy(profile.profilePhoto.publicId);
+                }
+
+                // Upload new profilePhoto to Cloudinary
+                const result = await cloudinary.uploader.upload(req.file.path, {
+                    folder: "Meride Haven/profilePhoto",
+                    width: 500,
+                    height: 500,
+                    crop: "fill"
+                });
+
+                // Update profilePhoto in profile
+                profile.profilePhoto = {
+                    publicId: result.public_id,
+                    url: result.secure_url
+                };
+                // Delete the temporary file after successful upload
+                if (fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+            } catch (uploadErr) {
+
+                // Clean up the file if upload fails
+                if (req.file.path && fs.existsSync(req.file.path)) {
+                    fs.unlinkSync(req.file.path);
+                }
+                return res.status(500).json({
+                    success: false,
+                    message: `Failed to upload image: ${uploadErr.message}`
+                });
+            }
+        };
+
+        // Save the updated profile
+        const updatedProfile = await profile.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Organization profile updated successfully",
+            data: {
+                fullName: updatedProfile.fullName,
+                address: updatedProfile.address,
+                profilePhoto: updatedProfile.profilePhoto,
+                phoneNumber: updatedProfile.phone,
+            }
+        });
+    } catch (error) {
+        console.error("Error updating organization profile:", error);
+
+        // Handle validation errors
+        if (error.name === 'ValidationError') {
+            const errors = Object.values(error.errors).map(err => err.message);
+            return res.status(400).json({
+                success: false,
+                message: "Validation error",
+                errors
+            });
+        }
+
+
+        res.status(500).json({
+            success: false,
+            message: "Server error while updating user profile",
+            error: error.message,
+        });
+    }
+};
