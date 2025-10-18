@@ -23,7 +23,15 @@ const ticketSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        vendorEmail: {
+            type: String,
+            required: true,
+        },
         clientPhone: {
+            type: String,
+            required: true,
+        },
+        clientEmail: {
             type: String,
             required: true,
         },

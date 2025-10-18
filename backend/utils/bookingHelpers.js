@@ -7,6 +7,9 @@ import { sendBookingEmailToClient, sendBookingEmailToVendor } from "./bookingEma
 export const handleSuccessfulPayment = async (eventData) => {
     try {
 
+        console.log(eventData);
+
+
         if (!eventData) {
             throw new Error("Event data is required");
         }

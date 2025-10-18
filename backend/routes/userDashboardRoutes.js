@@ -2,7 +2,6 @@ import express from 'express';
 import {
     bookingRatingController,
     cancelBooking,
-    completeBooking,
     createTicket,
     editProfile,
     fetchAllBookings,
@@ -20,7 +19,6 @@ userDashboardRouter.patch("/profile/edit", userAuthenticate, upload.single("prof
 
 userDashboardRouter.get("/bookings", userAuthenticate, fetchAllBookings);
 userDashboardRouter.post("/bookings/cancel", userAuthenticate, cancelBooking);
-userDashboardRouter.post("/bookings/complete", userAuthenticate, completeBooking);
 userDashboardRouter.post("/bookings/rate", userAuthenticate, bookingRatingController);
 
 userDashboardRouter.get("/tickets", userAuthenticate, fetchAllTickets);

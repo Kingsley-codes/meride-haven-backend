@@ -5,6 +5,7 @@ import Vendor from "../models/vendorModel.js";
 import fs from "fs";
 import { v2 as cloudinary } from 'cloudinary';
 import Ticket from "../models/ticketModel.js";
+import { clientCancelBooking, sendTicketEmailToAdmin } from "../utils/bookingEmailHelpers.js";
 
 
 
@@ -106,70 +107,7 @@ export const cancelBooking = async (req, res) => {
 
         await existingBooking.save();
 
-        return res.status(200).json({
-            success: true,
-            message: "Booking rejected successfully",
-            booking: existingBooking,
-        });
-    } catch (error) {
-        console.error("Error rejecting booking:", error);
-        return res.status(500).json({
-            success: false,
-            message: "An error occurred while rejecting the booking",
-            error: error.message,
-        });
-    }
-};
-
-
-export const completeBooking = async (req, res) => {
-    try {
-        const user = req.user;
-        if (!user) {
-            return res.status(403).json({
-                success: false,
-                message: "You are Unauthorized",
-            });
-        }
-
-        const { bookingID } = req.body;
-
-        if (!bookingID) {
-            return res.status(400).json({
-                success: false,
-                message: "Booking ID required",
-            });
-        }
-
-        // Find the booking first to check its current status
-        const existingBooking = await Booking.findOne({ bookingID, client: user });
-
-        if (!existingBooking) {
-            return res.status(404).json({
-                success: false,
-                message: "Booking not found",
-            });
-        }
-
-
-        if (existingBooking.status !== "in progress") {
-            return res.status(400).json({
-                success: false,
-                message: "You can only complete a service that's in progress",
-            });
-        }
-
-        if (existingBooking.status === "completed") {
-            return res.status(400).json({
-                success: false,
-                message: "Booking is already completed",
-            });
-        }
-
-        // Update the booking to cancelled
-        existingBooking.status = "completed";
-
-        await existingBooking.save();
+        await clientCancelBooking(bookingID);
 
         return res.status(200).json({
             success: true,
@@ -518,10 +456,12 @@ export const createTicket = async (req, res) => {
             client: booking.client,
             clientName: booking.clientName,
             clientPhone: booking.clientNumber,
+            clientEmail: booking.clientEmail,
             service: booking.service,
             serviceName: booking.serviceName,
             vendor: booking.vendor,
             vendorPhone: serviceVendor.phone,
+            vendorEmail: serviceVendor.email,
             serviceType: booking.serviceType,
             bookingID: booking.bookingID,
             ticketID: generateTicketID(),
@@ -529,6 +469,8 @@ export const createTicket = async (req, res) => {
             images: ticketImages,
             vendorName: serviceVendor.businessName
         })
+
+        await sendTicketEmailToAdmin(ticket._id);
 
         res.status(200).json({
             success: true,

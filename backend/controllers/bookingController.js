@@ -3,6 +3,7 @@ import User from "../models/userModel.js";
 import { handleFailedPayment, handleSuccessfulPayment } from "../utils/bookingHelpers.js";
 import crypto from "crypto";
 import axios from "axios";
+import { sendBookingEmailToClient, sendBookingEmailToVendor } from "../utils/bookingEmailHelpers.js";
 
 
 // Helper function to generate unique Booking IDs
@@ -238,7 +239,11 @@ export const verifyPayment = async (req, res) => {
             }
 
             booking.status = "upcoming";
+            booking.paymentStatus = "completed";
             await booking.save();
+
+            await sendBookingEmailToClient(booking.bookingID);
+            await sendBookingEmailToVendor(booking.bookingID);
 
             return res.status(200).json({
                 success: true,

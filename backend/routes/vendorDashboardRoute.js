@@ -3,6 +3,7 @@ import {
     acceptBooking,
     addBankDetails,
     cancelBooking,
+    completeBooking,
     editProfile,
     fetchAllBookings,
     fetchReviews,
@@ -25,6 +26,7 @@ vendorDashboardRouter.get("/reviews", vendorAuthenticate, fetchReviews);
 vendorDashboardRouter.get("/earnings", vendorAuthenticate, getVendorEarnings);
 vendorDashboardRouter.post("/bookings/reject", vendorAuthenticate, rejectBooking);
 vendorDashboardRouter.post("/bookings/accept", vendorAuthenticate, acceptBooking);
+vendorDashboardRouter.post("/bookings/complete", vendorAuthenticate, completeBooking);
 vendorDashboardRouter.post("/bookings/cancel", vendorAuthenticate, cancelBooking);
 vendorDashboardRouter.post("/bank", vendorAuthenticate, addBankDetails);
 
