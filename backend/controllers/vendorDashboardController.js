@@ -311,8 +311,7 @@ export const cancelBooking = async (req, res) => {
 
         await existingBooking.save();
 
-        await vendorCancelBooking(bookingID);
-        await bookingCanceled(bookingID);
+
 
         return res.status(200).json({
             success: true,
@@ -509,7 +508,7 @@ export const editProfile = async (req, res) => {
         let profile = await Vendor.findById(vendor);
 
         if (address !== undefined) {
-            profile.address = address;
+            profile.businessAddress = address;
         }
 
         if (phoneNumber !== undefined) {
@@ -560,16 +559,16 @@ export const editProfile = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "Organization profile updated successfully",
+            message: "Vendor profile updated successfully",
             data: {
                 fullName: updatedProfile.fullName,
-                address: updatedProfile.address,
+                address: updatedProfile.businessAddress,
                 profilePhoto: updatedProfile.profilePhoto,
                 phoneNumber: updatedProfile.phone,
             }
         });
     } catch (error) {
-        console.error("Error updating organization profile:", error);
+        console.error("Error updating vendor profile:", error);
 
         // Handle validation errors
         if (error.name === 'ValidationError') {
@@ -705,7 +704,7 @@ export const addBankDetails = async (req, res) => {
 export const editDriverProfile = async (req, res) => {
     try {
 
-        const { address, phoneNumber } = req.body;
+        const { phoneNumber, bio, state } = req.body;
 
         const vendor = req.vendor;
         if (!vendor) {
@@ -724,12 +723,25 @@ export const editDriverProfile = async (req, res) => {
 
         let profile = await Vendor.findById(vendor);
 
-        if (address !== undefined) {
-            profile.address = address;
+        if (bio !== undefined) {
+            profile.carDetails.bio = bio;
         }
 
         if (phoneNumber !== undefined) {
             profile.phone = phoneNumber;
+        }
+
+        if (state !== undefined) {
+            let parsedState = state;
+
+            if (typeof state === "string") {
+                parsedState = state
+                    .split(",")
+                    .map(day => day.trim())
+                    .filter(day => day !== "");
+            }
+
+            profile.carDetails.state = parsedState;
         }
 
         // Handle profilePhoto upload if a file is provided
@@ -776,16 +788,17 @@ export const editDriverProfile = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: "Organization profile updated successfully",
+            message: "Driver profile updated successfully",
             data: {
                 fullName: updatedProfile.fullName,
-                address: updatedProfile.address,
+                state: updatedProfile.carDetails.state,
+                bio: updatedProfile.carDetails.bio,
                 profilePhoto: updatedProfile.profilePhoto,
                 phoneNumber: updatedProfile.phone,
             }
         });
     } catch (error) {
-        console.error("Error updating organization profile:", error);
+        console.error("Error updating driver profile:", error);
 
         // Handle validation errors
         if (error.name === 'ValidationError') {
@@ -801,6 +814,107 @@ export const editDriverProfile = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Server error while updating user profile",
+            error: error.message,
+        });
+    }
+};
+
+
+export const updatecarDetails = async (req, res) => {
+    try {
+        const vendorID = req.vendor;
+
+        if (!vendorID) {
+            return res.status(403).json({
+                message: "You are not authorized to update services for this vendor",
+            });
+        }
+
+        const vendor = await Vendor.findById(vendorID);
+        if (!vendor) {
+            return res.status(404).json({ message: "Vendor not found" });
+        }
+
+        // ✅ Ensure carDetails exists
+        if (!vendor.carDetails) {
+            vendor.carDetails = {};
+        }
+
+        const filesToCleanup = [];
+        const { vehicleDetails, availability, price } = req.body;
+
+        // ✅ Update price
+        if (price !== undefined) {
+            vendor.price = price;
+        }
+
+        // ✅ Update availability
+        if (availability !== undefined) {
+            vendor.carDetails.availability = typeof availability === "string"
+                ? availability.split(",").map(day => day.trim()).filter(Boolean)
+                : availability;
+        }
+
+        // ✅ Files in form-data
+        const imageFiles = {
+            image1: req.files?.image1?.[0],
+            image2: req.files?.image2?.[0],
+            image3: req.files?.image3?.[0],
+        };
+
+        // ✅ Loop through images and update in carDetails
+        for (const key of ["image1", "image2", "image3"]) {
+            const newImage = imageFiles[key];
+            const removeFlag = req.body[`remove_${key}`]; // form: remove_image1 = "true"
+
+            // ✅ Remove image
+            if (removeFlag === "true" && vendor.carDetails[key]?.publicId) {
+                await cloudinary.uploader.destroy(vendor.carDetails[key].publicId);
+                vendor.carDetails[key] = undefined;
+                continue;
+            }
+
+            // ✅ Upload new image and replace
+            if (newImage) {
+                const uploadResult = await cloudinary.uploader.upload(newImage.path, {
+                    folder: "MerideHaven/serviceImages",
+                });
+
+                // Delete local upload
+                if (fs.existsSync(newImage.path)) {
+                    fs.unlinkSync(newImage.path);
+                }
+
+                // ✅ Delete existing Cloudinary image
+                if (vendor.carDetails[key]?.publicId) {
+                    await cloudinary.uploader.destroy(vendor.carDetails[key].publicId);
+                }
+
+                // ✅ Save to DB correctly (THIS WAS MISSING)
+                vendor.carDetails[key] = {
+                    publicId: uploadResult.public_id,
+                    url: uploadResult.secure_url,
+                };
+            }
+        }
+
+        // ✅ Vehicle details
+        if (vehicleDetails !== undefined) {
+            vendor.carDetails.vehicleDetails = vehicleDetails;
+        }
+
+        await vendor.save();
+
+        res.status(200).json({
+            message: "Car details updated successfully",
+            carDetails: vendor.carDetails,
+            price: vendor.price,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error updating car details",
             error: error.message,
         });
     }

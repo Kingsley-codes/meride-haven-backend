@@ -73,6 +73,9 @@ const vendorSchema = new mongoose.Schema({
     suspendReason: {
         type: String
     },
+    businessAddress: {
+        type: String
+    },
     cac: {
         publicId: String,
         url: String
@@ -89,9 +92,20 @@ const vendorSchema = new mongoose.Schema({
         publicId: String,
         url: String
     },
+    passport: {
+        publicId: { type: String },
+        url: { type: String }
+    },
+    license: {
+        publicId: { type: String },
+        url: { type: String }
+    },
     averageRating: {
         type: Number,
         default: 0
+    },
+    price: {
+        type: Number,
     },
     completedBookings: {
         type: Number,

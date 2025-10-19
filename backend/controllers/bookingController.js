@@ -4,6 +4,8 @@ import { handleFailedPayment, handleSuccessfulPayment } from "../utils/bookingHe
 import crypto from "crypto";
 import axios from "axios";
 import { sendBookingEmailToClient, sendBookingEmailToVendor } from "../utils/bookingEmailHelpers.js";
+import Service from "../models/serviceModel.js";
+import Vendor from "../models/vendorModel.js";
 
 
 // Helper function to generate unique Booking IDs
@@ -17,11 +19,11 @@ export const generateReference = (prefix = "erc") => {
 export const createBooking = async (req, res) => {
     try {
         const {
-            serviceID, serviceName,
-            price, duration,
-            startDate, endDate, address, state,
-            securityDeposit, time, clientName, vendorID,
-            serviceType, clientNumber, clientEmail
+            serviceID,
+            retailPrice, duration,
+            startDate, address, state,
+            time, clientName,
+            clientNumber, clientEmail
         } = req.body;
 
         if (time && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)) {
@@ -34,7 +36,7 @@ export const createBooking = async (req, res) => {
         try {
             client = await User.findOne({ email: clientEmail });
 
-            if (client.status === "suspended") {
+            if (client && client.status === "suspended") {
                 return res.status(400).json({
                     message: "Client is currently suspended"
                 });
@@ -68,12 +70,58 @@ export const createBooking = async (req, res) => {
             });
         }
 
+
+        let totalPrice = {};
+
+        let bookingType = "";
+
+        let service = await Service.findById(serviceID);
+
+        if (service) {
+            // Normal service booking
+            bookingType = "service";
+            totalPrice = service.serviceType === 'apartment'
+                ? (service.price * duration) + service.securityDeposit
+                : service.price * duration;
+
+            if (totalPrice !== retailPrice) {
+                return res.status(400).json({
+                    message: "Incorrect amount for this service and duration"
+                });
+            }
+        } else {
+            service = await Vendor.findById(serviceID)
+
+            if (!service) {
+                return res.status(400).json({
+                    message: "service or vendor not found",
+                });
+            }
+
+            if (service.VendorType !== "driver") {
+                return res.status(400).json({
+                    message: "You can only book a driver as a vendor",
+                    error: error.message
+                });
+            }
+
+            bookingType = "driver";
+            totalPrice = service.price * duration;
+
+            if (totalPrice !== retailPrice) {
+                return res.status(400).json({
+                    message: "Wrong expected amount for the service, considering the duration",
+                });
+            }
+
+        }
+
         const bookingID = generateBookingID();
         const paymentReference = generateReference();
 
         // Prepare Paystack transaction data
         const transactionData = {
-            amount: price,
+            amount: retailPrice,
             customerEmail: client.email,
             customerName: client.fullName,
             paymentReference: paymentReference,
@@ -83,10 +131,9 @@ export const createBooking = async (req, res) => {
             metadata: {
                 bookingID: bookingID,
                 clientNumber: client.phone,
-                serviceName: serviceName,
+                serviceName: service.serviceName || service.vendorName,
                 serviceID: serviceID,
-                serviceName: serviceName,
-                vendorID: vendorID,
+                vendorID: service.vendorID || serviceID,
             },
             redirectUrl: `${process.env.FRONTEND_URL}/service-payment-verification`
             // redirectUrl: "http://localhost:3000/bookings/verifyPayment"
@@ -124,23 +171,23 @@ export const createBooking = async (req, res) => {
         // Create booking record
         const newBooking = await Booking.create({
             service: serviceID,
-            serviceName,
+            serviceName: bookingType === "service" ? service.serviceName : service.vendorName,
             bookingID,
             client: client._id,
-            serviceType,
+            serviceType: bookingType === "service" ? service.serviceType : bookingType,
             clientName: client.fullName,
             clientNumber: client.phone,
             clientEmail: client.email,
-            vendor: vendorID,
-            price,
+            vendor: bookingType === "service" ? service.vendorID : serviceID,
+            price: retailPrice,
             paymentReference: paymentReference,
             transactionReference: ercResponse.data.responseBody.transactionReference,
             duration,
+            bookingType: bookingType,
             startDate,
-            endDate,
             address,
             state,
-            securityDeposit,
+            securityDeposit: service.serviceType === 'apartment' ? service.securityDeposit : "",
             time,
         });
 

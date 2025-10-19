@@ -650,16 +650,24 @@ export const registerDriver = async (req, res) => {
             });
         }
 
+        let parsedState = state;
+
+        if (typeof state === "string") {
+            parsedState = state
+                .split(",")
+                .map(day => day.trim())
+                .filter(day => day !== "");
+        }
+
         await Vendor.create({
             vendorName,
             email,
             phone,
             VendorType: "driver",
             carDetails: {
-                state
+                state: parsedState
             },
             password: await bcrypt.hash(password, 12),
-            isVerified: true
         });
 
         const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
@@ -681,129 +689,87 @@ export const registerDriver = async (req, res) => {
 };
 
 
+
 export const driverKyc = async (req, res) => {
-    let filesToCleanup = []; // Track files for cleanup
+    let filesToCleanup = [];
 
     try {
         const { vendorId, vehicleOwner, availability, price, experience, vehicleDetails } = req.body;
 
-        if (!req.files || !req.files.passport || !req.files.license || !req.files.address) {
-            return res.status(400).json({
-                error: "All documents are required"
-            });
+        // ✅ Find vendor
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) {
+            return res.status(404).json({ error: "Vendor not found" });
         }
 
-        if (!experience || experience < 0) {
-            return res.status(400).json({
-                error: "Invalid experience"
-            });
-        }
-        if (!price || price < 0) {
-            return res.status(400).json({
-                error: "Invalid price"
-            });
+        // ✅ Validate initial KYC only if no previous KYC exists
+        const isFirstSubmission = !vendor.kycuploaded;
+        if (isFirstSubmission) {
+            if (!req.files?.passport || !req.files?.license || !req.files?.address) {
+                return res.status(400).json({ error: "All documents must be uploaded for first KYC" });
+            }
         }
 
-        if (!vehicleOwner || (vehicleOwner && !vehicleDetails)) {
-            return res.status(400).json({
-                error: "Invalid vehicle ownership details"
-            });
+        // ✅ Optional: format availability
+        let parsedAvailability = availability;
+        if (typeof availability === "string") {
+            parsedAvailability = availability.split(",").map(day => day.trim()).filter(Boolean);
         }
 
-        const passportFile = req.files.passport[0];
-        const licenseFile = req.files.license[0];
-        const addressFile = req.files.address[0];
+        // ✅ Update non-image fields only if provided
+        if (vehicleOwner !== undefined) vendor.carDetails.vehicleOwner = vehicleOwner;
+        if (parsedAvailability) vendor.carDetails.availability = parsedAvailability;
+        if (experience !== undefined) vendor.carDetails.experience = experience;
+        if (vehicleDetails !== undefined) vendor.carDetails.vehicleDetails = vehicleDetails;
+        if (price !== undefined) vendor.price = price;
 
-
-        if (passportFile) {
-            filesToCleanup.push(passportFile);
-        }
-
-        if (licenseFile) {
-            filesToCleanup.push(licenseFile);
-        }
-
-        if (addressFile) {
-            filesToCleanup.push(addressFile);
-        }
-
-        // Upload each document to Cloudinary
-        const passportResult = await cloudinary.uploader.upload(
-            passportFile.path,
-            { folder: "Meride Haven/kyc" }
-        );
-        const licenseResult = await cloudinary.uploader.upload(
-            licenseFile.path,
-            { folder: "Meride Haven/kyc" }
-        );
-        const addressResult = await cloudinary.uploader.upload(
-            addressFile.path,
-            { folder: "Meride Haven/kyc" }
-        );
-
-        const driverVendor = await Vendor.findOneAndUpdate(
-            { _id: vendorId },
-            {
-                carDetails: {
-                    vehicleOwner,
-                    availability,
-                    experience,
-                    price,
-                    vehicleDetails,
-                    passport: {
-                        publicId: passportResult.public_id,
-                        url: passportResult.secure_url
-                    },
-                    license: {
-                        publicId: licenseResult.public_id,
-                        url: licenseResult.secure_url
-                    },
-                    address: {
-                        publicId: addressResult.public_id,
-                        url: addressResult.secure_url
+        // ✅ Function to delete old Cloudinary image before saving the new one
+        const replaceCloudinaryImage = async (newFile, oldImage, fieldName) => {
+            if (newFile) {
+                if (oldImage?.publicId) {
+                    try {
+                        await cloudinary.uploader.destroy(oldImage.publicId); // ✅ Delete old one from Cloudinary
+                    } catch (err) {
+                        console.error(`Failed to delete old ${fieldName} image:`, err.message);
                     }
-                },
-                kycuploaded: true,
-            },
-            { new: true }
-        );
-
-        // Delete file immediately after upload
-        if (fs.existsSync(passportFile.path)) {
-            fs.unlinkSync(passportFile.path);
-        }
-
-        if (fs.existsSync(licenseFile.path)) {
-            fs.unlinkSync(licenseFile.path);
-        }
-
-        if (fs.existsSync(addressFile.path)) {
-            fs.unlinkSync(addressFile.path);
-        }
-
-        if (!driverVendor) {
-            return res.status(404).json({
-                error: "Vendor not found"
-            });
-        }
-
-        return res.status(201).json({
-            message: "Driver KYC submitted successfully"
-        });
-    } catch (error) {
-        // Cleanup any remaining files on error
-        filesToCleanup.forEach(file => {
-            if (file.path && fs.existsSync(file.path)) {
-                try {
-                    fs.unlinkSync(file.path);
-                } catch (unlinkError) {
-                    console.error('Error deleting file:', unlinkError);
                 }
+                const uploaded = await cloudinary.uploader.upload(newFile.path, { folder: "Meride Haven/kyc" });
+                filesToCleanup.push(newFile); // temp cleanup
+                return { publicId: uploaded.public_id, url: uploaded.secure_url };
+            }
+            return oldImage;
+        };
+
+        // ✅ If new file uploaded → update it (and delete old one)
+        vendor.passport = await replaceCloudinaryImage(req.files?.passport?.[0], vendor.passport, "passport");
+        vendor.license = await replaceCloudinaryImage(req.files?.license?.[0], vendor.license, "license");
+        vendor.address = await replaceCloudinaryImage(req.files?.address?.[0], vendor.address, "address");
+
+        vendor.kycuploaded = true;
+        await vendor.save();
+
+        // ✅ Clean up local temp files
+        filesToCleanup.forEach(file => {
+            if (file?.path && fs.existsSync(file.path)) {
+                fs.unlinkSync(file.path);
+            }
+        });
+
+        res.status(200).json({
+            message: isFirstSubmission ? "Driver KYC submitted successfully" : "Driver KYC updated successfully",
+            vendor
+        });
+
+    } catch (error) {
+        // ❌ Cleanup any leftover uploaded temp files
+        filesToCleanup.forEach(file => {
+            if (file?.path && fs.existsSync(file.path)) {
+                try { fs.unlinkSync(file.path); } catch { }
             }
         });
 
         res.status(500).json({
-            message: "Error creating service",
+            message: "Error processing KYC",
             error: error.message
         });
     }

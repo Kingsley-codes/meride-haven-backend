@@ -38,6 +38,11 @@ const bookingSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        bookingType: {
+            type: String,
+            enum: ["service", "driver"],
+            required: true,
+        },
         paymentReference: {
             type: String,
             required: true,

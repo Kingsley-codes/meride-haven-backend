@@ -33,7 +33,6 @@ export const driverSchema = new mongoose.Schema({
     },
     bio: {
         type: String,
-        required: true
     },
     vehicleDetails: {
         type: String,
@@ -41,19 +40,15 @@ export const driverSchema = new mongoose.Schema({
             return this.vehicleOwner; // Required if vehicleOwner is true
         },
     },
-    price: {
-        type: Number,
-        required: true
-    },
-    passport: {
+    image1: {
         publicId: { type: String },
         url: { type: String }
     },
-    license: {
+    image2: {
         publicId: { type: String },
         url: { type: String }
     },
-    address: {
+    image3: {
         publicId: { type: String },
         url: { type: String }
     },

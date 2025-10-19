@@ -4,16 +4,18 @@ import {
     addBankDetails,
     cancelBooking,
     completeBooking,
+    editDriverProfile,
     editProfile,
     fetchAllBookings,
     fetchReviews,
     fetchVendorDashoboard,
     getUserProfile,
     getVendorEarnings,
-    rejectBooking
+    rejectBooking,
+    updatecarDetails
 } from "../controllers/vendorDashboardController.js";
 import { vendorAuthenticate } from "../middleware/authenticationMiddleware.js";
-import { upload } from '../middleware/uploadMiddleware.js';
+import { upload, uploadServiceImages } from '../middleware/uploadMiddleware.js';
 
 
 
@@ -33,6 +35,8 @@ vendorDashboardRouter.post("/bank", vendorAuthenticate, addBankDetails);
 
 vendorDashboardRouter.get("/profile", vendorAuthenticate, getUserProfile);
 vendorDashboardRouter.patch("/profile/edit", vendorAuthenticate, upload.single("profilePhoto"), editProfile);
+vendorDashboardRouter.patch("/driver-profile/edit", vendorAuthenticate, upload.single("profilePhoto"), editDriverProfile);
+vendorDashboardRouter.patch('/driver/update', vendorAuthenticate, uploadServiceImages, updatecarDetails);
 
 
 export default vendorDashboardRouter;
