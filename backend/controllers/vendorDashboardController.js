@@ -704,7 +704,7 @@ export const addBankDetails = async (req, res) => {
 export const editDriverProfile = async (req, res) => {
     try {
 
-        const { phoneNumber, bio, state } = req.body;
+        const { phoneNumber, bio, state, availability, price } = req.body;
 
         const vendor = req.vendor;
         if (!vendor) {
@@ -742,6 +742,18 @@ export const editDriverProfile = async (req, res) => {
             }
 
             profile.carDetails.state = parsedState;
+        }
+
+        // ✅ Update price
+        if (price !== undefined) {
+            vendor.price = price;
+        }
+
+        // ✅ Update availability
+        if (availability !== undefined) {
+            vendor.carDetails.availability = typeof availability === "string"
+                ? availability.split(",").map(day => day.trim()).filter(Boolean)
+                : availability;
         }
 
         // Handle profilePhoto upload if a file is provided
@@ -841,19 +853,9 @@ export const updatecarDetails = async (req, res) => {
         }
 
         const filesToCleanup = [];
-        const { vehicleDetails, availability, price } = req.body;
+        const { vehicleDetails } = req.body;
 
-        // ✅ Update price
-        if (price !== undefined) {
-            vendor.price = price;
-        }
 
-        // ✅ Update availability
-        if (availability !== undefined) {
-            vendor.carDetails.availability = typeof availability === "string"
-                ? availability.split(",").map(day => day.trim()).filter(Boolean)
-                : availability;
-        }
 
         // ✅ Files in form-data
         const imageFiles = {

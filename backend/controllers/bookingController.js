@@ -76,21 +76,27 @@ export const createBooking = async (req, res) => {
         let bookingType = "";
 
         let service = await Service.findById(serviceID);
+        // console.log(service);
+
 
         if (service) {
             // Normal service booking
             bookingType = "service";
             totalPrice = service.serviceType === 'apartment'
-                ? (service.price * duration) + service.securityDeposit
+                ? (service.price * duration) + service.apartmentDetails.securityDeposit
                 : service.price * duration;
 
             if (totalPrice !== retailPrice) {
+                console.log(totalPrice);
+                console.log(service.serviceType);
+
                 return res.status(400).json({
                     message: "Incorrect amount for this service and duration"
                 });
             }
         } else {
             service = await Vendor.findById(serviceID)
+            // console.log(service);
 
             if (!service) {
                 return res.status(400).json({
@@ -99,6 +105,8 @@ export const createBooking = async (req, res) => {
             }
 
             if (service.VendorType !== "driver") {
+                // console.log(service.VendorType);
+
                 return res.status(400).json({
                     message: "You can only book a driver as a vendor",
                     error: error.message
@@ -109,6 +117,8 @@ export const createBooking = async (req, res) => {
             totalPrice = service.price * duration;
 
             if (totalPrice !== retailPrice) {
+                console.log("the expected price is:", totalPrice);
+                console.log("you wanted to pay:", retailPrice);
                 return res.status(400).json({
                     message: "Wrong expected amount for the service, considering the duration",
                 });
@@ -340,3 +350,63 @@ export const handleErcasWebhook = async (req, res) => {
         console.error("Error processing webhook:", error);
     }
 }
+
+
+export const isVendorAvailable = async (req, res) => {
+    try {
+        const { serviceId, startDate, duration } = req.query; // ✅ now using query instead of body
+
+        if (!serviceId || !startDate || !duration) {
+            return res.status(400).json({ error: "Provide serviceID, startDate and duration" });
+        }
+
+        let vendorID = {}
+        let serviceID = {}
+
+        let service = await Service.findById(serviceId);
+
+        if (service) {
+            vendorID = service.vendorID;
+            serviceID = serviceId
+        } else {
+            const vendor = await Vendor.findById(serviceId);
+
+            if (!vendor) {
+                return res.status(404).json({ error: "Service not found" });
+            }
+
+            vendorID = vendor._id;
+            serviceID = serviceId
+        }
+
+        const requestedStart = new Date(startDate);
+        const requestedEnd = new Date(requestedStart.getTime() + duration * 24 * 60 * 60 * 1000);
+
+        const conflict = await Booking.findOne({
+            vendor: vendorID,
+            service: serviceID,
+            status: { $nin: ["cancelled", "failed"] },
+            $expr: {
+                $and: [
+                    { $lt: ["$startDate", requestedEnd] },
+                    {
+                        $gt: [
+                            { $add: ["$startDate", { $multiply: ["$duration", 24 * 60 * 60 * 1000] }] },
+                            requestedStart
+                        ]
+                    }
+                ]
+            }
+        });
+
+        if (conflict) {
+            return res.status(400).json({ message: "Booking period not available", conflict });
+        }
+
+        return res.status(200).json({ message: "Service is available for this period" });
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error processing availability", error: error.message });
+    }
+};

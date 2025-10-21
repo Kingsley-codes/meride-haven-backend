@@ -694,7 +694,7 @@ export const driverKyc = async (req, res) => {
     let filesToCleanup = [];
 
     try {
-        const { vendorId, vehicleOwner, availability, price, experience, vehicleDetails } = req.body;
+        const { vendorId, vehicleOwner, bio, availability, price, experience, vehicleDetails } = req.body;
 
         // ✅ Find vendor
         const vendor = await Vendor.findById(vendorId);
@@ -718,10 +718,37 @@ export const driverKyc = async (req, res) => {
 
         // ✅ Update non-image fields only if provided
         if (vehicleOwner !== undefined) vendor.carDetails.vehicleOwner = vehicleOwner;
+        if (bio !== undefined) vendor.carDetails.bio = bio;
         if (parsedAvailability) vendor.carDetails.availability = parsedAvailability;
         if (experience !== undefined) vendor.carDetails.experience = experience;
         if (vehicleDetails !== undefined) vendor.carDetails.vehicleDetails = vehicleDetails;
         if (price !== undefined) vendor.price = price;
+
+        if (profilePhoto) {
+            try {
+                const driverPhotoResult = await cloudinary.uploader.upload(profilePhoto.path, {
+                    folder: 'MerideHaven/profilePhoto'
+                });
+
+                // Delete old driver photo
+                if (vendor.profilePhoto?.publicId) {
+                    try {
+                        await cloudinary.uploader.destroy(service.CarDetails.driverProfilePhoto.publicId);
+                    } catch (error) {
+                        console.error("Error deleting old driver photo:", error);
+                    }
+                }
+
+                vendor.profilePhoto = {
+                    publicId: driverPhotoResult.public_id,
+                    url: driverPhotoResult.secure_url
+                };
+            } finally {
+                if (fs.existsSync(profilePhoto.path)) {
+                    fs.unlinkSync(profilePhoto.path);
+                }
+            }
+        }
 
         // ✅ Function to delete old Cloudinary image before saving the new one
         const replaceCloudinaryImage = async (newFile, oldImage, fieldName) => {

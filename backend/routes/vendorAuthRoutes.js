@@ -14,15 +14,11 @@ import {
     driverKyc,
     registerDriver,
 } from "../controllers/vendorAuthController.js";
-import multer from "multer";
-import { uploadDriverImages } from "../middleware/uploadMiddleware.js";
+import { uploadDriverImages, uploadVendorImages } from "../middleware/uploadMiddleware.js";
 
 
 
 const vendorAuthRouter = express.Router();
-
-
-const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for multer
 
 
 // Registration routes
@@ -55,17 +51,7 @@ vendorAuthRouter.get('/google', handleGoogleLogin);
 vendorAuthRouter.get('/google/callback', googleAuthCallback);
 
 
-vendorAuthRouter.post(
-    "/upload",
-    upload.fields([
-        { name: "cac", maxCount: 1 },
-        { name: "directorID", maxCount: 1 },
-        { name: "address", maxCount: 1 },
-    ]),
-    uploadKyc
-)
-
-
+vendorAuthRouter.post("/upload", uploadVendorImages, uploadKyc);
 
 vendorAuthRouter.post("/driverkyc", uploadDriverImages, driverKyc); // Step 3: Verify vendor with code
 
