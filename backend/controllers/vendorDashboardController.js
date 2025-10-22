@@ -746,12 +746,12 @@ export const editDriverProfile = async (req, res) => {
 
         // ✅ Update price
         if (price !== undefined) {
-            vendor.price = price;
+            profile.price = price;
         }
 
         // ✅ Update availability
         if (availability !== undefined) {
-            vendor.carDetails.availability = typeof availability === "string"
+            profile.carDetails.availability = typeof availability === "string"
                 ? availability.split(",").map(day => day.trim()).filter(Boolean)
                 : availability;
         }
