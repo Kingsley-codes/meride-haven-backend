@@ -10,6 +10,7 @@ import {
     getBookingAnalytics,
     getUserProfile,
     inviteAdmin,
+    refundClientBooking,
     resendInvitation,
     setPassword,
     suspendClient
@@ -23,6 +24,7 @@ const adminDashboardRouter = express.Router();
 
 
 adminDashboardRouter.get("/bookings", adminAuthenticate, fetchAllBookings);
+adminDashboardRouter.post("/bookings/refund", adminAuthenticate, refundClientBooking);
 adminDashboardRouter.get("/clients", adminAuthenticate, fetchAllClients);
 adminDashboardRouter.get("/clients/:clientID", adminAuthenticate, fetchSingleClient);
 adminDashboardRouter.get("/analytics", adminAuthenticate, getBookingAnalytics);

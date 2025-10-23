@@ -10,8 +10,8 @@ export const getServices = async (req, res) => {
     const limit = 24;
     const skip = (page - 1) * limit;
 
-    let services = [];
-    let drivers = [];
+    let data = [];
+    let totalResults = 0;
 
     // ✅ If filtering specifically for drivers
     if (servicetype === "driver") {
@@ -30,66 +30,78 @@ export const getServices = async (req, res) => {
         ];
       }
 
-      const totalResults = await Vendor.countDocuments(driverFilter);
-      const driverData = await Vendor.find(driverFilter)
+      totalResults = await Vendor.countDocuments(driverFilter);
+      data = await Vendor.find(driverFilter)
         .select("-password -googleID -email -phone -bankDetails -license -passport -address")
         .skip(skip)
         .limit(limit);
 
-      return res.status(200).json({
-        status: "success",
-        query: q || null,
-        currentPage: page,
-        totalPages: Math.ceil(totalResults / limit),
-        results: driverData.length,
-        totalResults,
-        data: driverData, // ✅ Only drivers here
-      });
     }
+    // ✅ If filtering for other service types (NOT driver)
+    else if (servicetype && servicetype !== "driver") {
+      const serviceFilter = {
+        approvedStatus: "approved",
+        isAvailable: true,
+        serviceType: servicetype
+      };
 
-    // ✅ Fetch Services if servicetype is NOT "driver"
-    let serviceFilter = { approvedStatus: "approved", isAvailable: true };
+      if (location) serviceFilter.location = location;
+      if (q) {
+        serviceFilter.$or = [
+          { serviceName: { $regex: q, $options: "i" } },
+          { vendorName: { $regex: q, $options: "i" } },
+          { location: { $regex: q, $options: "i" } },
+        ];
+      }
 
-    if (servicetype) serviceFilter.serviceType = servicetype;
-    if (location) serviceFilter.location = location;
-    if (q) {
-      serviceFilter.$or = [
-        { serviceName: { $regex: q, $options: "i" } },
-        { vendorName: { $regex: q, $options: "i" } },
-        { location: { $regex: q, $options: "i" } },
-      ];
+      totalResults = await Service.countDocuments(serviceFilter);
+      data = await Service.find(serviceFilter).skip(skip).limit(limit);
+
     }
+    // ✅ Default case: fetch ALL services (all service types) + drivers
+    else {
+      // Fetch Services with filters (if any)
+      let serviceFilter = { approvedStatus: "approved", isAvailable: true };
 
-    const totalServiceResults = await Service.countDocuments(serviceFilter);
-    services = await Service.find(serviceFilter).skip(skip).limit(limit);
+      if (location) serviceFilter.location = location;
+      if (q) {
+        serviceFilter.$or = [
+          { serviceName: { $regex: q, $options: "i" } },
+          { vendorName: { $regex: q, $options: "i" } },
+          { location: { $regex: q, $options: "i" } },
+        ];
+      }
 
-    // ✅ Fetch Drivers (only those approved and active)
-    drivers = await Vendor.find({
-      VendorType: "driver",
-      approvedStatus: "approved",
-      status: "active"
-    })
-      .select("-password -googleID -email -phone -bankDetails -license -passport -address");
+      const [services, drivers, serviceCount] = await Promise.all([
+        Service.find(serviceFilter).skip(skip).limit(limit),
+        Vendor.find({
+          VendorType: "driver",
+          approvedStatus: "approved",
+          status: "active"
+        }).select("-password -googleID -email -phone -bankDetails -license -passport -address"),
+        Service.countDocuments(serviceFilter)
+      ]);
 
-    // ✅ Merge and shuffle services + drivers
-    const combined = [...services, ...drivers].sort(() => Math.random() - 0.5);
+      // Combine and shuffle services + drivers
+      data = [...services, ...drivers].sort(() => Math.random() - 0.5);
+      totalResults = serviceCount + drivers.length;
+    }
 
     res.status(200).json({
       status: "success",
       query: q || null,
       filter: servicetype || null,
       currentPage: page,
-      totalPages: Math.ceil(totalServiceResults / limit),
-      results: combined.length,
-      totalResults: totalServiceResults + drivers.length,
-      data: combined,
+      totalPages: Math.ceil(totalResults / limit),
+      results: data.length,
+      totalResults,
+      data: data,
     });
 
   } catch (err) {
     res.status(500).json({ status: "error", message: err.message });
   }
 };
-
 
 
 // Fetch a single service by ID

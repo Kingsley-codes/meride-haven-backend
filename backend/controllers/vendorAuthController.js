@@ -101,11 +101,10 @@ export const registerVendor = async (req, res) => {
             email,
             phone,
             password: await bcrypt.hash(password, 12),
-            isVerified: true
         });
 
-        // const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
-        // await sendVendorVerificationEmail(email, verificationCode, false);
+        const verificationCode = VendorVerificationCodes.generateVerificationCode(email);
+        await sendVendorVerificationEmail(email, verificationCode, false);
 
         res.status(200).json({
             status: "success",

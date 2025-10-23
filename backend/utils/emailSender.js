@@ -141,6 +141,7 @@ export const sendVendorVerificationEmail = async (email, code, isResend = false)
 
   try {
     const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor verification email sent to ${email}`);
     return result;
   } catch (error) {
     console.error("Error sending vendor verification email:", error);
@@ -821,7 +822,7 @@ export const sendAdminPasswordResetEmail = async (email, code) => {
 
 
 export const sendInvitationEmail = async (email, token, inviterName, isResend = false) => {
-  const invitationLink = `${process.env.FRONTEND_URL}/set-password?token=${token}&email=${encodeURIComponent(email)}`;
+  const invitationLink = `${process.env.FRONTEND_URL}/admin/set-password?token=${token}&email=${encodeURIComponent(email)}`;
 
   const subject = isResend
     ? 'New Invitation to Join Our Platform'

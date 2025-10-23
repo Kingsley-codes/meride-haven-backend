@@ -198,6 +198,57 @@ export const fetchAllBookings = async (req, res) => {
 };
 
 
+export const refundClientBooking = async (req, res) => {
+    try {
+        const admin = req.admin;
+        if (!admin) {
+            return res.status(403).json({
+                success: false,
+                message: "You are Unauthorized",
+            });
+        }
+
+        const { bookingID } = req.body;
+        if (!bookingID) {
+            return res.status(400).json({
+                success: false,
+                message: "Booking ID is required",
+            });
+        }
+
+        // Find the booking and update its status
+        const booking = await Booking.findOne({ bookingID });
+        if (!booking) {
+            return res.status(404).json({
+                success: false,
+                message: "Booking not found",
+            });
+        }
+
+        if (booking.status !== "cancelled") {
+            return res.status(400).json({
+                success: false,
+                message: "Only cancelled bookings can be refunded",
+            });
+        }
+
+        booking.paymentStatus = "refunded";
+        await booking.save();
+
+        return res.status(200).json({
+            success: true,
+            message: "Booking refunded successfully",
+        });
+    } catch (error) {
+        console.error("Error refunding booking:", error);
+        return res.status(500).json({
+            success: false,
+            message: "An error occurred while refunding the booking",
+            error: error.message,
+        });
+    }
+};
+
 
 export const fetchAllClients = async (req, res) => {
     try {
