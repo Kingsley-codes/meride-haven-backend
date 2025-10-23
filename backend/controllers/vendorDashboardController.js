@@ -35,6 +35,7 @@ export const fetchAllBookings = async (req, res) => {
             filter.$or = [
                 { clientNumber: { $regex: q, $options: "i" } },
                 { clientName: { $regex: q, $options: "i" } },
+                { bookingID: { $regex: q, $options: "i" } },
             ];
         }
 
@@ -805,8 +806,10 @@ export const editDriverProfile = async (req, res) => {
                 fullName: updatedProfile.fullName,
                 state: updatedProfile.carDetails.state,
                 bio: updatedProfile.carDetails.bio,
+                availability: updatedProfile.carDetails.availability,
                 profilePhoto: updatedProfile.profilePhoto,
                 phoneNumber: updatedProfile.phone,
+                price: updatedProfile.price,
             }
         });
     } catch (error) {

@@ -576,7 +576,9 @@ export const uploadKyc = async (req, res) => {
             publicId: addressProofResult.public_id,
             url: addressProofResult.secure_url
         };
+
         kycVendor.kycuploaded = true;
+        kycVendor.approvedStatus = 'pending';
 
         await kycVendor.save();
 
@@ -696,6 +698,9 @@ export const driverKyc = async (req, res) => {
     try {
         const { vendorId, vehicleOwner, bio, availability, price, experience, vehicleDetails } = req.body;
 
+        const profilePhotoFile = req.files?.profilePhoto?.[0];
+
+
         // ✅ Find vendor
         const vendor = await Vendor.findById(vendorId);
         if (!vendor) {
@@ -724,16 +729,16 @@ export const driverKyc = async (req, res) => {
         if (vehicleDetails !== undefined) vendor.carDetails.vehicleDetails = vehicleDetails;
         if (price !== undefined) vendor.price = price;
 
-        if (profilePhoto) {
+        if (profilePhotoFile) {
             try {
-                const driverPhotoResult = await cloudinary.uploader.upload(profilePhoto.path, {
+                const driverPhotoResult = await cloudinary.uploader.upload(profilePhotoFile.path, {
                     folder: 'MerideHaven/profilePhoto'
                 });
 
                 // Delete old driver photo
                 if (vendor.profilePhoto?.publicId) {
                     try {
-                        await cloudinary.uploader.destroy(service.CarDetails.driverProfilePhoto.publicId);
+                        await cloudinary.uploader.destroy(vendor.profilePhoto.publicId);
                     } catch (error) {
                         console.error("Error deleting old driver photo:", error);
                     }
@@ -744,8 +749,8 @@ export const driverKyc = async (req, res) => {
                     url: driverPhotoResult.secure_url
                 };
             } finally {
-                if (fs.existsSync(profilePhoto.path)) {
-                    fs.unlinkSync(profilePhoto.path);
+                if (fs.existsSync(profilePhotoFile.path)) {
+                    fs.unlinkSync(profilePhotoFile.path);
                 }
             }
         }
@@ -773,6 +778,7 @@ export const driverKyc = async (req, res) => {
         vendor.address = await replaceCloudinaryImage(req.files?.address?.[0], vendor.address, "address");
 
         vendor.kycuploaded = true;
+        vendor.approvedStatus = 'pending';
         await vendor.save();
 
         // ✅ Clean up local temp files
