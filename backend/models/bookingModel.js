@@ -70,6 +70,10 @@ const bookingSchema = new mongoose.Schema(
             enum: ["pending", "failed", "completed", "refunded"],
             default: "pending",
         },
+        image: {
+            publicId: { type: String },
+            url: { type: String }
+        },
         rating: {
             type: Number,
             default: 0

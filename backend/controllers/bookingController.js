@@ -73,6 +73,8 @@ export const createBooking = async (req, res) => {
 
         let totalPrice = {};
 
+        let bookingImage = {};
+
         let bookingType = "";
 
         let service = await Service.findById(serviceID);
@@ -94,6 +96,7 @@ export const createBooking = async (req, res) => {
                     message: "Incorrect amount for this service and duration"
                 });
             }
+            bookingImage = service.image1;
         } else {
             service = await Vendor.findById(serviceID)
             // console.log(service);
@@ -115,6 +118,7 @@ export const createBooking = async (req, res) => {
 
             bookingType = "driver";
             totalPrice = service.price * duration;
+            bookingImage = service.profilePhoto;
 
             if (totalPrice !== retailPrice) {
                 console.log("the expected price is:", totalPrice);
@@ -195,6 +199,7 @@ export const createBooking = async (req, res) => {
             duration,
             bookingType: bookingType,
             startDate,
+            image: bookingImage,
             address,
             state,
             securityDeposit: service.serviceType === 'apartment' ? service.securityDeposit : "",
