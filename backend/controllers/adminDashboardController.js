@@ -8,6 +8,7 @@ import { sendInvitationEmail } from "../utils/emailSender.js";
 import bcrypt from "bcrypt";
 import fs from "fs";
 import { v2 as cloudinary } from 'cloudinary';
+import { sendClientReactivationEmail, sendClientSuspensionEmail } from "../utils/vendorProcessingEmail.js";
 
 
 
@@ -448,7 +449,7 @@ export const suspendClient = async (req, res) => {
             });
         }
 
-        const { clientID } = req.body
+        const { clientID, suspendReason } = req.body
 
         if (!clientID) {
             return res.status(400).json({
@@ -467,7 +468,10 @@ export const suspendClient = async (req, res) => {
         }
 
         client.status = "suspended";
+        client.suspendReason = suspendReason;
         await client.save();
+
+        await sendClientSuspensionEmail(client, suspendReason)
 
         res.status(200).json({
             success: true,
@@ -515,6 +519,8 @@ export const activateClient = async (req, res) => {
 
         client.status = "active";
         await client.save();
+
+        await sendClientReactivationEmail(client)
 
         res.status(200).json({
             success: true,

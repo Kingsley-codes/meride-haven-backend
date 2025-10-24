@@ -8,6 +8,7 @@ import { v2 as cloudinary } from "cloudinary";
 import passport from 'passport';
 import streamifier from "streamifier";
 import fs from "fs";
+import { sendKYCUploadNotificationToAdmin } from '../utils/vendorProcessingEmail.js';
 
 
 
@@ -581,6 +582,8 @@ export const uploadKyc = async (req, res) => {
 
         await kycVendor.save();
 
+        await sendKYCUploadNotificationToAdmin(kycVendor);
+
         return res.status(201).json({
             message: "KYC submitted successfully",
         });
@@ -786,6 +789,9 @@ export const driverKyc = async (req, res) => {
                 fs.unlinkSync(file.path);
             }
         });
+
+        await sendKYCUploadNotificationToAdmin(vendor);
+
 
         res.status(200).json({
             message: isFirstSubmission ? "Driver KYC submitted successfully" : "Driver KYC updated successfully",

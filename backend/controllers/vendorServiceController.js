@@ -2,6 +2,7 @@ import Service from "../models/serviceModel.js";
 import Vendor from "../models/vendorModel.js";
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
+import { sendServiceSubmissionNotificationToAdmin } from "../utils/vendorProcessingEmail.js";
 
 
 export const createService = async (req, res) => {
@@ -229,6 +230,7 @@ export const createService = async (req, res) => {
             } : undefined
         });
 
+        await sendServiceSubmissionNotificationToAdmin(newService);
 
         res.status(201).json({
             message: "Service created successfully",
