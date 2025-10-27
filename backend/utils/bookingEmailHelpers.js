@@ -291,7 +291,7 @@ export const sendBookingEmailToVendor = async (bookingID) => {
 // Send booking confirmation email to the client
 export const sendBookingconfirmationToClient = async (bookingID) => {
   try {
-    const booking = await Booking.findOne(bookingID)
+    const booking = await Booking.findOne({ bookingID })
 
     if (!booking) throw new Error("Booking not found");
 
@@ -425,7 +425,7 @@ export const sendBookingconfirmationToClient = async (bookingID) => {
 
 export const vendorCancelBooking = async (bookingID) => {
   try {
-    const booking = await Booking.findOne(bookingID)
+    const booking = await Booking.findOne({ bookingID });
 
     if (!booking) throw new Error("Booking not found");
 
@@ -548,7 +548,7 @@ export const vendorCancelBooking = async (bookingID) => {
 
 export const clientCancelBooking = async (bookingID) => {
   try {
-    const booking = await Booking.findOne(bookingID)
+    const booking = await Booking.findOne({ bookingID })
 
     if (!booking) throw new Error("Booking not found");
 
@@ -672,7 +672,7 @@ export const clientCancelBooking = async (bookingID) => {
 
 export const bookingCanceled = async (bookingID) => {
   try {
-    const booking = await Booking.findOne(bookingID)
+    const booking = await Booking.findOne({ bookingID })
 
     if (!booking) throw new Error("Booking not found");
 

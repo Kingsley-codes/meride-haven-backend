@@ -1,6 +1,13 @@
 import Service from "../models/serviceModel.js";
 import Vendor from "../models/vendorModel.js";
-import { sendServiceRejectionEmail, sendVendorApprovalEmail, sendVendorReactivationEmail, sendVendorRejectionEmail, sendVendorSuspensionEmail } from "../utils/vendorProcessingEmail.js";
+import {
+    sendServiceApprovalEmail,
+    sendServiceRejectionEmail,
+    sendVendorApprovalEmail,
+    sendVendorReactivationEmail,
+    sendVendorRejectionEmail,
+    sendVendorSuspensionEmail
+} from "../utils/vendorProcessingEmail.js";
 
 
 
@@ -310,7 +317,10 @@ export const approveVendor = async (req, res) => {
         await sendVendorApprovalEmail(vendor);
         res.status(200).json({ success: true, message: "Vendor approved" });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error" });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
@@ -347,7 +357,11 @@ export const rejectVendor = async (req, res) => {
         await sendVendorRejectionEmail(vendor, declineReason);
         res.status(200).json({ success: true, message: "Vendor rejected" });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error" });
+        console.log("Error rejecting vendor:", error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };
 
@@ -511,7 +525,9 @@ export const declineService = async (req, res) => {
         service.declineReason = declineReason;
         await service.save();
 
-        await sendServiceRejectionEmail(service.vendorEmail, service.vendorName, service.serviceName, service.serviceType, declineReason);
+        const vendor = await Vendor.findOne({ _id: service.vendorID });
+
+        await sendServiceRejectionEmail(vendor.email, service.vendorName, service.serviceName, service.serviceType, declineReason);
 
         res.status(200).json({
             success: true,
@@ -550,13 +566,18 @@ export const approveService = async (req, res) => {
         service.approvedStatus = 'approved';
         await service.save();
 
-        await sendVendorApprovalEmail(service.vendorEmail, service.vendorName, service.serviceName, service.serviceType);
+        const vendor = await Vendor.findOne({ _id: service.vendorID });
+
+        await sendServiceApprovalEmail(vendor.email, service.vendorName, service.serviceName, service.serviceType);
         res.status(200).json({
             success: true,
             message: "Service approved",
             data: service
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Server Error" });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 };

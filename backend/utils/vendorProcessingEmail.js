@@ -2,24 +2,24 @@ import nodemailer from 'nodemailer';
 
 // Create transporter (same as in your template)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-    },
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
 });
 
 const adminEmail = "adeniyifunmilola001@gmail.com"
 
 // 1. Email for approved vendor
 export const sendVendorApprovalEmail = async (vendor) => {
-    const dashboardLink = `${process.env.FRONTEND_URL}/vendor/dashboard/dashboard`;
+  const dashboardLink = `${process.env.FRONTEND_URL}/vendor/dashboard/dashboard`;
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: vendor.email,
-        subject: "Congratulations! Your Vendor Account Has Been Approved",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: vendor.email,
+    subject: "Congratulations! Your Vendor Account Has Been Approved",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -128,26 +128,28 @@ export const sendVendorApprovalEmail = async (vendor) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Vendor approval email sent to ${vendor.email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor approval email:", error);
-        throw new Error(`Failed to send vendor approval email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor approval email sent to ${vendor.email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor approval email:", error);
+    throw new Error(`Failed to send vendor approval email: ${error.message}`);
+  }
 };
 
 // 2. Email for rejected vendor
 export const sendVendorRejectionEmail = async (vendor, declineReason) => {
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: vendor.email,
-        subject: "Update on Your Vendor Application",
-        html: `
+  const reapplyLink = `${process.env.FRONTEND_URL}/vendor/vendor/dashboard`;
+
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: vendor.email,
+    subject: "Update on Your Vendor Application",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -252,8 +254,8 @@ export const sendVendorRejectionEmail = async (vendor, declineReason) => {
 
         <div style="text-align: center;">
         ${declineReason !== 'seems illegitimate' ?
-                `<a href="${reapplyLink}" class="button">Reapply Now</a>`
-                : ""}
+        `<a href="${reapplyLink}" class="button">Reapply Now</a>`
+        : ""}
         </div>
 
         <p>If you have any questions about the rejection reason or need clarification, our support team is here to help.</p>
@@ -266,28 +268,28 @@ export const sendVendorRejectionEmail = async (vendor, declineReason) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Vendor rejection email sent to ${vendor.email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor rejection email:", error);
-        throw new Error(`Failed to send vendor rejection email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor rejection email sent to ${vendor.email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor rejection email:", error);
+    throw new Error(`Failed to send vendor rejection email: ${error.message}`);
+  }
 };
 
 
 // 3. Email to admin for KYC upload notification
 export const sendKYCUploadNotificationToAdmin = async (vendorData) => {
-    const adminDashboardLink = `${process.env.FRONTEND_URL}/admin/dashboard/client`;
+  const adminDashboardLink = `${process.env.FRONTEND_URL}/admin/dashboard/client`;
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: adminEmail,
-        subject: `KYC Documents Uploaded - ${vendorData.VendorType === "driver" ? vendorData.vendorName : vendorData.businessName}`,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: adminEmail,
+    subject: `KYC Documents Uploaded - ${vendorData.VendorType === "driver" ? vendorData.vendorName : vendorData.businessName}`,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -400,27 +402,27 @@ export const sendKYCUploadNotificationToAdmin = async (vendorData) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`KYC upload notification sent to admin ${adminEmail}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending KYC notification email:", error);
-        throw new Error(`Failed to send KYC notification email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`KYC upload notification sent to admin ${adminEmail}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending KYC notification email:", error);
+    throw new Error(`Failed to send KYC notification email: ${error.message}`);
+  }
 };
 
 
 // 4. Email for suspended vendor account
 export const sendVendorSuspensionEmail = async (vendor, suspendReason) => {
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: vendor.email,
-        subject: "Important: Your Vendor Account Has Been Suspended",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: vendor.email,
+    subject: "Important: Your Vendor Account Has Been Suspended",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -552,27 +554,27 @@ export const sendVendorSuspensionEmail = async (vendor, suspendReason) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Vendor suspension email sent to ${vendor.email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor suspension email:", error);
-        throw new Error(`Failed to send vendor suspension email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor suspension email sent to ${vendor.email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor suspension email:", error);
+    throw new Error(`Failed to send vendor suspension email: ${error.message}`);
+  }
 };
 
 // 5. Email for reactivated vendor account
 export const sendVendorReactivationEmail = async (vendor) => {
-    const dashboardLink = `${process.env.FRONTEND_URL}/vendor/vendor/dashboard`;
+  const dashboardLink = `${process.env.FRONTEND_URL}/vendor/vendor/dashboard`;
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: vendor.email,
-        subject: "Good News: Your Vendor Account Has Been Reactivated",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: vendor.email,
+    subject: "Good News: Your Vendor Account Has Been Reactivated",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -701,27 +703,27 @@ export const sendVendorReactivationEmail = async (vendor) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Vendor reactivation email sent to ${vendor.email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor reactivation email:", error);
-        throw new Error(`Failed to send vendor reactivation email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor reactivation email sent to ${vendor.email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor reactivation email:", error);
+    throw new Error(`Failed to send vendor reactivation email: ${error.message}`);
+  }
 
 };
 
 // 4. Email for suspended client account
 export const sendClientSuspensionEmail = async (client, suspendReason) => {
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: client.email,
-        subject: "Important: Your Client Account Has Been Suspended",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: client.email,
+    subject: "Important: Your Client Account Has Been Suspended",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -852,27 +854,27 @@ export const sendClientSuspensionEmail = async (client, suspendReason) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Vendor suspension email sent to ${client.email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor suspension email:", error);
-        throw new Error(`Failed to send vendor suspension email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Vendor suspension email sent to ${client.email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor suspension email:", error);
+    throw new Error(`Failed to send vendor suspension email: ${error.message}`);
+  }
 };
 
 // 5. Email for reactivated client account
 export const sendClientReactivationEmail = async (client) => {
-    const dashboardLink = `${process.env.FRONTEND_URL}/user/dashboard/dashboard`;
+  const dashboardLink = `${process.env.FRONTEND_URL}/user/dashboard/dashboard`;
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: client.email,
-        subject: "Good News: Your Client Account Has Been Reactivated",
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: client.email,
+    subject: "Good News: Your Client Account Has Been Reactivated",
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -992,27 +994,27 @@ export const sendClientReactivationEmail = async (client) => {
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Client reactivation email sent to ${client.email}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending vendor reactivation email:", error);
-        throw new Error(`Failed to send vendor reactivation email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Client reactivation email sent to ${client.email}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending vendor reactivation email:", error);
+    throw new Error(`Failed to send vendor reactivation email: ${error.message}`);
+  }
 };
 
 
 // 1. Email for approved service
 export const sendServiceApprovalEmail = async (vendorEmail, vendorName, serviceName, serviceType) => {
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: vendorEmail,
-        subject: `Your ${serviceType} Service Has Been Approved - ${serviceName}`,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: vendorEmail,
+    subject: `Your ${serviceType} Service Has Been Approved - ${serviceName}`,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -1048,7 +1050,7 @@ export const sendServiceApprovalEmail = async (vendorEmail, vendorName, serviceN
             padding: 25px;
             text-align: center;
             margin: 25px 0;
-          }
+          } 
           .icon {
             font-size: 48px;
             color: #4CAF50;
@@ -1135,26 +1137,26 @@ export const sendServiceApprovalEmail = async (vendorEmail, vendorName, serviceN
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Service approval email sent to ${vendorEmail}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending service approval email:", error);
-        throw new Error(`Failed to send service approval email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Service approval email sent to ${vendorEmail}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending service approval email:", error);
+    throw new Error(`Failed to send service approval email: ${error.message}`);
+  }
 };
 
 // 2. Email for rejected service
 export const sendServiceRejectionEmail = async (vendorEmail, vendorName, serviceName, serviceType, declineReason) => {
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: vendorEmail,
-        subject: `Update on Your ${serviceType} Service Submission - ${serviceName}`,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: vendorEmail,
+    subject: `Update on Your ${serviceType} Service Submission - ${serviceName}`,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -1285,26 +1287,26 @@ export const sendServiceRejectionEmail = async (vendorEmail, vendorName, service
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`Service rejection email sent to ${vendorEmail}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending service rejection email:", error);
-        throw new Error(`Failed to send service rejection email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`Service rejection email sent to ${vendorEmail}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending service rejection email:", error);
+    throw new Error(`Failed to send service rejection email: ${error.message}`);
+  }
 };
 
 // 3. Email to admin for new service notification
 export const sendNewServiceNotificationToAdmin = async (serviceData, vendorData) => {
 
-    const mailOptions = {
-        from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
-        to: adminEmail,
-        subject: `New ${serviceData.serviceType} Service Submission - ${serviceData.serviceName}`,
-        html: `
+  const mailOptions = {
+    from: `"Meride Haven" <${process.env.GMAIL_USER}>`,
+    to: adminEmail,
+    subject: `New ${serviceData.serviceType} Service Submission - ${serviceData.serviceName}`,
+    html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -1434,14 +1436,14 @@ export const sendNewServiceNotificationToAdmin = async (serviceData, vendorData)
       </body>
       </html>
     `
-    };
+  };
 
-    try {
-        const result = await transporter.sendMail(mailOptions);
-        console.log(`New service notification sent to admin ${adminEmail}`);
-        return result;
-    } catch (error) {
-        console.error("Error sending new service notification email:", error);
-        throw new Error(`Failed to send new service notification email: ${error.message}`);
-    }
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log(`New service notification sent to admin ${adminEmail}`);
+    return result;
+  } catch (error) {
+    console.error("Error sending new service notification email:", error);
+    throw new Error(`Failed to send new service notification email: ${error.message}`);
+  }
 };

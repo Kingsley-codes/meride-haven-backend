@@ -75,7 +75,7 @@ export const createService = async (req, res) => {
             });
         }
 
-        if (serviceType === "events" && (!capacity || !venueType || !cateringOptions ||
+        if (serviceType === "event" && (!capacity || !venueType || !cateringOptions ||
             !amenities || !rules)) {
             return res.status(400).json({
                 message: "Please fill the necessary fields required for events"
@@ -230,7 +230,7 @@ export const createService = async (req, res) => {
             } : undefined
         });
 
-        await sendNewServiceNotificationToAdmin(newService);
+        await sendNewServiceNotificationToAdmin(newService, vendor);
 
         res.status(201).json({
             message: "Service created successfully",
