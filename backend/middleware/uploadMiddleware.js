@@ -53,11 +53,6 @@ export const uploadServiceImages = upload.fields([
     { name: 'driverPhoto', maxCount: 1 }
 ]);
 
-export const uploadVendorImages = upload.fields([
-    { name: "cac", maxCount: 1 },
-    { name: "directorID", maxCount: 1 },
-    { name: "address", maxCount: 1 }
-]);
 export const uploadDriverImages = upload.fields([
     { name: "passport", maxCount: 1 },
     { name: "license", maxCount: 1 },
@@ -66,5 +61,9 @@ export const uploadDriverImages = upload.fields([
 ]);
 
 
-
-
+const kycStorage = multer.memoryStorage();
+export const uploadVendorImages = multer({ storage: kycStorage }).fields([
+    { name: "cac", maxCount: 1 },
+    { name: "directorID", maxCount: 1 },
+    { name: "address", maxCount: 1 }
+]);

@@ -133,6 +133,7 @@ export const fetchAllVendors = async (req, res) => {
             ...filter,
             kycuploaded: true,
         }).select('-password -googleID')
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
@@ -245,6 +246,7 @@ export const fetchAllDrivers = async (req, res) => {
             kycuploaded: true,
         })
             .select("-password -googleID")
+            .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .lean();
