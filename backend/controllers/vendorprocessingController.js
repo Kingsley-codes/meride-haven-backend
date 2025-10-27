@@ -62,7 +62,9 @@ export const fetchAllVendors = async (req, res) => {
         const { q, status, approvedStatus } = req.query;
 
         // FILTERS
-        const filter = {};
+        const filter = {
+            VendorType: "others" // ✅ Only fetch vendors with type 'others'
+        };
 
         if (status && ["active", "suspended"].includes(status)) {
             filter.status = status;
@@ -75,56 +77,51 @@ export const fetchAllVendors = async (req, res) => {
         if (q) {
             filter.$or = [
                 { email: { $regex: q, $options: "i" } },
-                { businessName: { $regex: q, $options: "i" } }
+                { businessName: { $regex: q, $options: "i" } },
+                { vendorName: { $regex: q, $options: "i" } }
             ];
         }
 
-        // --- 1. Overview Stats ---
-
-        // Define current and previous month date ranges
+        // --- Overview Stats ---
         const now = new Date();
         const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-        // Current month counts
-        const totalClients = await Vendor.countDocuments();
-        const activeClients = await Vendor.countDocuments({ status: "active" });
-        const suspendedClients = await Vendor.countDocuments({ status: "suspended" });
+        const totalClients = await Vendor.countDocuments({ VendorType: "others" });
+        const activeClients = await Vendor.countDocuments({ status: "active", VendorType: "others" });
+        const suspendedClients = await Vendor.countDocuments({ status: "suspended", VendorType: "others" });
 
-        // Last month counts
         const lastMonthTotal = await Vendor.countDocuments({
+            VendorType: "others",
             createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
         });
 
         const lastMonthActive = await Vendor.countDocuments({
+            VendorType: "others",
             status: "active",
             createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
         });
 
         const lastMonthSuspended = await Vendor.countDocuments({
+            VendorType: "others",
             status: "suspended",
             createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
         });
 
-        // Helper function for percentage change
         const getPercentageChange = (current, previous) => {
             if (previous === 0 && current === 0) return 0;
-            if (previous === 0) return 100; // means growth from nothing
+            if (previous === 0) return 100;
             return (((current - previous) / previous) * 100).toFixed(1);
         };
 
-        // Month-to-month changes
         const totalChange = getPercentageChange(totalClients, lastMonthTotal);
         const activeChange = getPercentageChange(activeClients, lastMonthActive);
-        const suspendedChange = getPercentageChange(
-            suspendedClients,
-            lastMonthSuspended
-        );
+        const suspendedChange = getPercentageChange(suspendedClients, lastMonthSuspended);
 
         const totalFiltered = await Vendor.countDocuments(filter);
 
-        // --- Pagination ---
+        // --- Pagination + Sorted by newest ---
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
         const skip = (page - 1) * limit;
@@ -132,8 +129,9 @@ export const fetchAllVendors = async (req, res) => {
         const allVendors = await Vendor.find({
             ...filter,
             kycuploaded: true,
-        }).select('-password -googleID')
-            .sort({ createdAt: -1 })
+        })
+            .select('-password -googleID')
+            .sort({ createdAt: -1 }) // ✅ Most recent first
             .skip(skip)
             .limit(limit)
             .lean();
