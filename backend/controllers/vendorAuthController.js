@@ -712,7 +712,7 @@ export const driverKyc = async (req, res) => {
         // ✅ Validate initial KYC only if no previous KYC exists
         const isFirstSubmission = !vendor.kycuploaded;
         if (isFirstSubmission) {
-            if (!req.files?.passport || !req.files?.license || !req.files?.address) {
+            if (!req.files?.nin || !req.files?.license || !req.files?.address) {
                 return res.status(400).json({ error: "All documents must be uploaded for first KYC" });
             }
         }
@@ -775,7 +775,7 @@ export const driverKyc = async (req, res) => {
         };
 
         // ✅ If new file uploaded → update it (and delete old one)
-        vendor.passport = await replaceCloudinaryImage(req.files?.passport?.[0], vendor.passport, "passport");
+        vendor.nin = await replaceCloudinaryImage(req.files?.nin?.[0], vendor.nin, "nin");
         vendor.license = await replaceCloudinaryImage(req.files?.license?.[0], vendor.license, "license");
         vendor.address = await replaceCloudinaryImage(req.files?.address?.[0], vendor.address, "address");
 

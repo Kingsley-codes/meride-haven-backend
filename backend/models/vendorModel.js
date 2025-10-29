@@ -92,7 +92,7 @@ const vendorSchema = new mongoose.Schema({
         publicId: String,
         url: String
     },
-    passport: {
+    nin: {
         publicId: { type: String },
         url: { type: String }
     },

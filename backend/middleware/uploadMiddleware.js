@@ -54,7 +54,7 @@ export const uploadServiceImages = upload.fields([
 ]);
 
 export const uploadDriverImages = upload.fields([
-    { name: "passport", maxCount: 1 },
+    { name: "nin", maxCount: 1 },
     { name: "license", maxCount: 1 },
     { name: "address", maxCount: 1 },
     { name: 'profilePhoto', maxCount: 1 }
