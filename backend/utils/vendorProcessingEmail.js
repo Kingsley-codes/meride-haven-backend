@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const adminEmail = "adeniyifunmilola001@gmail.com"
+const adminEmail = "contact@meride-haven.com";
 
 // 1. Email for approved vendor
 export const sendVendorApprovalEmail = async (vendor) => {
