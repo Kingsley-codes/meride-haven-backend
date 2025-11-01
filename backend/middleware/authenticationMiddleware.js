@@ -24,7 +24,7 @@ export const userAuthenticate = async (req, res, next) => {
         const currentUser = await User.findById(decoded.id);
         if (!currentUser) throw new Error("User not found");
 
-        req.user = currentUser;
+        req.user = currentUser._id;
         next();
     } catch (err) {
         console.error("Protect error:", err);
@@ -60,7 +60,7 @@ export const vendorAuthenticate = async (req, res, next) => {
         const currentUser = await Vendor.findById(decoded.id);
         if (!currentUser) throw new Error("Vendor not found");
 
-        req.vendor = currentUser;
+        req.vendor = currentUser._id;
         next();
     } catch (err) {
         console.error("Protect error:", err);
@@ -96,7 +96,7 @@ export const adminAuthenticate = async (req, res, next) => {
         const currentUser = await Admin.findById(decoded.id);
         if (!currentUser) throw new Error("Admin not found");
 
-        req.admin = currentUser;
+        req.admin = currentUser._id;
         next();
     } catch (err) {
         console.error("Protect error:", err);
